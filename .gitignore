@@ -7,12 +7,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies & Build Output
 node_modules
 dist
 dist-ssr
 *.local
 
-# Editor directories and files
+# Editor & Environment
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,6 +23,17 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+*.code-workspace
 .env
 .env.local
 .env.*.local
+
+# Legacy GAS & Local Migration Files (Excluded from GitHub)
+Code.js
+Index_GAS.html
+appsscript.json
+.clasp.json
+migration_data/
+scripts/
+search_res*.txt
+panduan.md
