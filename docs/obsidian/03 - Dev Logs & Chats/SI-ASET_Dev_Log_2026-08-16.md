@@ -51,9 +51,11 @@ Pada sesi ini, kami fokus mengembalikan layout asli dari `Index_GAS.html` ke dal
 - Tombol toolbar lengkap: **Export CSV**, **Upload dari Excel**, dan **Tambah Karyawan**.
 - Search bar instan dengan tombol Cari dan tombol Reset.
 
-### 5. Integrasi Obsidian Docs & Antigravity Skill
-- Membuat struktur dokumentasi Obsidian Vault di dalam folder `docs/obsidian/`.
-- Membuat Antigravity Custom Skill di `.agents/skills/siaset-assistant/SKILL.md` agar asisten otomatis memahami konteks proyek SI-ASET dalam setiap sesi interaksi berikutnya.
+### 6. Deployment ke Vercel & RustFS Gateway Setup
+- **Production URL**: `https://si-aset-bice.vercel.app/`
+- **GitHub Repository**: `wildanishaq31-spec/si-aset`
+- **Serverless Storage Gateway**: `/api/storage.js` aktif dengan S3 AWS SDK v3.
+- **CORS RustFS**: Siap menerima permintaan PUT presigned URL dari origin `https://si-aset-bice.vercel.app`.
 
 ---
 
@@ -61,4 +63,5 @@ Pada sesi ini, kami fokus mengembalikan layout asli dari `Index_GAS.html` ke dal
 - [[Home|🏠 Kembali ke Map of Content]]
 - [[Kendaraan_Module|🚗 Detail Modul Kendaraan]]
 - [[Karyawan_Module|👥 Detail Modul Karyawan]]
+- [[RustFS_Storage_Architecture_Standard|📦 Standar Arsitektur RustFS]]
 - [[Antigravity_SI-ASET_Skill|🧠 Skill Definition]]
