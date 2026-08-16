@@ -37,3 +37,5 @@ migration_data/
 scripts/
 search_res*.txt
 panduan.md
+.agents/
+.oxlintrc.json
