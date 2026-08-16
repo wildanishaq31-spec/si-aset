@@ -1,0 +1,175 @@
+/* ============================================================
+   index.css — Global Styles untuk SI-ASET
+   Bootstrap 5 di-import pertama, lalu custom CSS variables
+   ============================================================ */
+
+/* Import Bootstrap */
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
+/* ---- CSS Variables ---- */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-bg: #f8fafc;
+  --color-sidebar: #1a1f3c;
+  --color-primary: #3b82f6;
+  --color-primary-dark: #2563eb;
+  --color-surface: #ffffff;
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --radius-card: 14px;
+  --radius-btn: 8px;
+}
+
+/* ---- Base ---- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+}
+
+/* ---- Scrollbar (Webkit) ---- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ---- Bootstrap Overrides ---- */
+.btn {
+  border-radius: var(--radius-btn);
+  font-weight: 500;
+  font-size: 0.83rem;
+}
+
+.form-control, .form-select {
+  border-radius: 8px;
+  font-size: 0.84rem;
+}
+
+.form-control:focus, .form-select:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  border-color: var(--color-primary);
+}
+
+.modal-content {
+  border-radius: 16px;
+  border: none;
+}
+
+.table > thead > tr > th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.table > tbody > tr > td {
+  vertical-align: middle;
+}
+
+/* ---- Sidebar Scrollbar Override ---- */
+.sidebar-wrapper::-webkit-scrollbar {
+  width: 4px;
+}
+.sidebar-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sidebar-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* ---- Nav Link hover ---- */
+.sidebar-wrapper a:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #fff !important;
+}
+
+/* ---- Card / Panel ---- */
+.si-card,
+.card-custom {
+  background: #ffffff;
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.5rem;
+}
+
+/* ---- GAS Modern Stat Card Gradients ---- */
+.bg-modern-purple {
+  background: linear-gradient(135deg, #ab86ef, #8a53f0) !important;
+}
+
+.bg-modern-blue {
+  background: linear-gradient(135deg, #62a1f5, #337aeb) !important;
+}
+
+.bg-modern-coral {
+  background: linear-gradient(135deg, #f78d8d, #f25252) !important;
+}
+
+.bg-modern-orange {
+  background: linear-gradient(135deg, #fcb677, #f7913b) !important;
+}
+
+.icon-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Welcome Banner Style ---- */
+.welcome-banner {
+  background: linear-gradient(135deg, #74b9ff 0%, #3a97ef 100%) !important;
+  border-radius: 16px;
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ---- Print Styles ---- */
+@media print {
+  .sidebar-wrapper,
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
+/* ---- Animations ---- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-fade {
+  animation: fadeIn 0.2s ease;
+}
