@@ -129,8 +129,18 @@ function formatBytes(bytes, decimals = 1) {
 }
 
 export default function TemplatePage() {
-  const [rustFiles, setRustFiles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Inisialisasi langsung dari Cache Lokal (0 ms delay — Instan Realtime Feel)
+  const [rustFiles, setRustFiles] = useState(() => {
+    try {
+      const cached = localStorage.getItem('si_aset_template_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [search, setSearch] = useState('');
   const [filterAset, setFilterAset] = useState('ALL');
   const [filterTipe, setFilterTipe] = useState('ALL');
@@ -139,9 +149,10 @@ export default function TemplatePage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Ambil daftar file template master langsung dari RustFS
-  const fetchTemplatesFromRustFS = async () => {
-    setLoading(true);
+  // Ambil daftar file template master langsung dari Storage (Background Silent Sync)
+  const fetchTemplatesFromRustFS = async (showBlockLoading = false) => {
+    if (showBlockLoading) setLoading(true);
+    setIsSyncing(true);
     try {
       const res = await fetch('/api/storage', {
         method: 'POST',
@@ -149,27 +160,26 @@ export default function TemplatePage() {
         body: JSON.stringify({ action: 'get_templates' }),
       });
       const data = await res.json();
-      if (data.success && data.templates) {
+      if (data.success && Array.isArray(data.templates)) {
         setRustFiles(data.templates);
-      } else {
-        setRustFiles([]);
+        localStorage.setItem('si_aset_template_cache', JSON.stringify(data.templates));
       }
     } catch (err) {
-      console.warn('Gagal memuat template dari RustFS:', err);
-      setRustFiles([]);
+      console.warn('Gagal memuat template dari Storage:', err);
     } finally {
       setLoading(false);
+      setIsSyncing(false);
     }
   };
 
   useEffect(() => {
-    fetchTemplatesFromRustFS();
+    // Sinkronisasi otomatis di latar belakang tanpa memblokir tampilan tabel
+    fetchTemplatesFromRustFS(false);
   }, []);
 
-  // Gabungkan daftar template standar dengan status file aktual di RustFS
+  // Gabungkan daftar template standar dengan status file aktual di Storage
   const templateList = useMemo(() => {
     return INITIAL_TEMPLATES.map((tmpl) => {
-      // Cari file di RustFS yang cocok dengan file_target / fileKey / nama template
       const matched = rustFiles.find((f) => {
         const cleanName = f.fileName?.toLowerCase() || '';
         const targetClean = tmpl.file_target?.toLowerCase() || '';
@@ -218,13 +228,28 @@ export default function TemplatePage() {
     setUploading(true);
     try {
       // Simpan langsung ke folder TEMPLATE di Storage
-      await uploadFileToRustFS(file, 'TEMPLATE');
+      const { publicUrl, fileKey } = await uploadFileToRustFS(file, 'TEMPLATE');
+
+      // Update state & cache seketika (Optimistic UI Update 0ms)
+      const newEntry = {
+        fileName: file.name,
+        fileKey: fileKey || `TEMPLATE/${file.name}`,
+        size: file.size,
+        lastModified: new Date().toISOString(),
+        url: `/api/storage?key=${encodeURIComponent(fileKey || `TEMPLATE/${file.name}`)}`,
+        downloadUrl: `/api/storage?key=${encodeURIComponent(fileKey || `TEMPLATE/${file.name}`)}&download=1`,
+      };
+
+      const updatedList = [...rustFiles.filter((f) => f.fileName !== file.name), newEntry];
+      setRustFiles(updatedList);
+      localStorage.setItem('si_aset_template_cache', JSON.stringify(updatedList));
+
       notify.success(
         `Master file ${file.name} berhasil diunggah ke Storage untuk template ${uploadModalItem.nama_template}!`,
         'Upload Master Berhasil'
       );
       setUploadModalItem(null);
-      await fetchTemplatesFromRustFS();
+      fetchTemplatesFromRustFS(false);
     } catch (err) {
       notify.error(`Gagal mengunggah file template ke Storage: ${err.message}`, 'Upload Gagal');
     } finally {
@@ -266,6 +291,11 @@ export default function TemplatePage() {
     });
 
     if (confirmed) {
+      // Optimistic delete dari state & cache (0 ms response)
+      const updatedList = rustFiles.filter((f) => f.fileKey !== tmpl.fileKey && f.fileName !== tmpl.fileName);
+      setRustFiles(updatedList);
+      localStorage.setItem('si_aset_template_cache', JSON.stringify(updatedList));
+
       try {
         const res = await fetch('/api/storage', {
           method: 'POST',
@@ -278,12 +308,13 @@ export default function TemplatePage() {
         const data = await res.json();
         if (data.success) {
           notify.success(`File master ${tmpl.fileName} berhasil dihapus dari Storage.`, 'File Dihapus');
-          await fetchTemplatesFromRustFS();
+          fetchTemplatesFromRustFS(false);
         } else {
           throw new Error(data.error || 'Gagal menghapus file');
         }
       } catch (err) {
         notify.error(`Gagal menghapus file: ${err.message}`, 'Hapus Gagal');
+        fetchTemplatesFromRustFS(false);
       }
     }
   };
@@ -305,11 +336,11 @@ export default function TemplatePage() {
           <button
             type="button"
             className="btn btn-light border btn-sm shadow-sm d-flex align-items-center gap-1"
-            onClick={fetchTemplatesFromRustFS}
-            disabled={loading}
+            onClick={() => fetchTemplatesFromRustFS(false)}
+            disabled={isSyncing}
           >
-            <i className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''}`}></i>
-            <span>Refresh Storage</span>
+            <i className={`bi bi-arrow-clockwise ${isSyncing ? 'spin' : ''}`}></i>
+            <span>{isSyncing ? 'Menyinkronkan...' : 'Refresh Storage'}</span>
           </button>
         </div>
       </div>
