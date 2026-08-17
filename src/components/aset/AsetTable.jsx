@@ -39,63 +39,69 @@ export default function AsetTable({
   }
 
   return (
-    <div className="table-responsive">
-      <table className="table table-bordered table-striped table-hover align-middle small mb-0">
-        <thead className="table-dark">
-          <tr>
-            <th style={{ width: '45px', textAlign: 'center' }}>No</th>
-            {columns.map((col) => (
-              <th key={col.key} style={col.style || {}}>
-                {col.label}
-              </th>
-            ))}
-            <th style={{ width: '110px', textAlign: 'center' }}>Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((item, idx) => (
-            <tr key={item.id || idx}>
-              <td className="text-center text-muted fw-bold">{idx + 1}</td>
+    <div className="modern-table-container">
+      <div className="table-responsive">
+        <table className="table modern-table align-middle">
+          <thead>
+            <tr>
+              <th style={{ width: '50px', textAlign: 'center' }}>NO</th>
               {columns.map((col) => (
-                <td key={col.key} style={col.style || {}}>
-                  {col.render ? col.render(item[col.key], item) : (item[col.key] || '-')}
-                </td>
+                <th key={col.key} style={col.style || {}}>
+                  {col.label}
+                </th>
               ))}
-              <td className="text-center">
-                <div className="btn-group btn-group-sm">
-                  {onView && (
-                    <button
-                      className="btn btn-outline-info btn-sm px-2"
-                      onClick={() => onView(item)}
-                      title="Lihat Detail"
-                    >
-                      ℹ️
-                    </button>
-                  )}
-                  {onEdit && (
-                    <button
-                      className="btn btn-outline-primary btn-sm px-2"
-                      onClick={() => onEdit(item)}
-                      title="Ubah / Edit"
-                    >
-                      ✏️
-                    </button>
-                  )}
-                  {isAdmin && onDelete && (
-                    <button
-                      className="btn btn-outline-danger btn-sm px-2"
-                      onClick={() => onDelete(item)}
-                      title="Hapus Data"
-                    >
-                      🗑️
-                    </button>
-                  )}
-                </div>
-              </td>
+              <th style={{ width: '120px', textAlign: 'center' }}>AKSI</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.map((item, idx) => (
+              <tr key={item.id || idx}>
+                <td className="text-center text-muted fw-bold small">{idx + 1}</td>
+                {columns.map((col) => (
+                  <td key={col.key} style={col.style || {}}>
+                    {col.render ? col.render(item[col.key], item) : (item[col.key] || '-')}
+                  </td>
+                ))}
+                <td className="text-center">
+                  <div className="d-flex justify-content-center gap-1">
+                    {onView && (
+                      <button
+                        className="btn-action-view"
+                        onClick={() => onView(item)}
+                        title="Lihat Detail Data"
+                      >
+                        ℹ️ Detail
+                      </button>
+                    )}
+                    {onEdit && (
+                      <button
+                        className="btn-action-edit"
+                        onClick={() => onEdit(item)}
+                        title="Ubah Data"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
+                    {isAdmin && onDelete && (
+                      <button
+                        className="btn-action-delete"
+                        onClick={() => onDelete(item)}
+                        title="Hapus Data"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-top small text-muted">
+        <span>Menampilkan <strong>{data.length}</strong> data terdaftar</span>
+        <span className="badge bg-white text-secondary border">SI-ASET Pro</span>
+      </div>
     </div>
   );
 }
