@@ -128,6 +128,7 @@ const INITIAL_TEMPLATES = [
     folder: 'TEMPLATE',
     fileKey: 'TEMPLATE/MASTER_PEMERIKSAAN_SEPEDA_MOTOR.docx',
     description: 'Template Word Lembar Checklist Pemeriksaan Fisik Sepeda Motor',
+    isCustom: true,
   },
   {
     id: 'T-011',
@@ -140,6 +141,7 @@ const INITIAL_TEMPLATES = [
     folder: 'TEMPLATE',
     fileKey: 'TEMPLATE/MASTER_DATA_KENDARAAN.xlsx',
     description: 'Template Excel Rekapitulasi Data Induk Kendaraan Dinas',
+    isCustom: true,
   },
   {
     id: 'T-012',
@@ -152,6 +154,7 @@ const INITIAL_TEMPLATES = [
     folder: 'TEMPLATE',
     fileKey: 'TEMPLATE/MASTER_DATA_PERALATAN.xlsx',
     description: 'Template Excel Rekapitulasi Data Induk Peralatan Kerja Kantor',
+    isCustom: true,
   },
   {
     id: 'T-013',
@@ -164,6 +167,7 @@ const INITIAL_TEMPLATES = [
     folder: 'TEMPLATE',
     fileKey: 'TEMPLATE/MASTER_DATA_RUMAH_DINAS.xlsx',
     description: 'Template Excel Rekapitulasi Data Induk Bangunan Rumah Dinas',
+    isCustom: true,
   },
   {
     id: 'T-014',
@@ -176,6 +180,7 @@ const INITIAL_TEMPLATES = [
     folder: 'TEMPLATE',
     fileKey: 'TEMPLATE/MASTER_BA_RUMAH_DINAS.docx',
     description: 'Template Word Berita Acara Pinjam Pakai Inventaris Bangunan Gedung Rumah Dinas',
+    isCustom: true,
   },
 ];
 
@@ -189,21 +194,17 @@ function formatBytes(bytes, decimals = 1) {
 }
 
 export default function TemplatePage() {
-  // Inisialisasi langsung dari Cache Lokal (0 ms delay — Instan Realtime Feel)
   const [rustFiles, setRustFiles] = useState(() => {
     try {
-      const cached = localStorage.getItem('si_aset_template_cache');
-      return cached ? JSON.parse(cached) : [];
-    } catch (e) {
+      return JSON.parse(localStorage.getItem('si_aset_template_cache') || '[]');
+    } catch {
       return [];
     }
   });
-
   const [customTemplates, setCustomTemplates] = useState(() => {
     try {
-      const cached = localStorage.getItem('si_aset_custom_templates');
-      return cached ? JSON.parse(cached) : [];
-    } catch (e) {
+      return JSON.parse(localStorage.getItem('si_aset_custom_templates') || '[]');
+    } catch {
       return [];
     }
   });
@@ -213,7 +214,7 @@ export default function TemplatePage() {
   const [search, setSearch] = useState('');
   const [filterAset, setFilterAset] = useState('ALL');
   const [filterTipe, setFilterTipe] = useState('ALL');
-  
+
   // Modal Upload Master
   const [uploadModalItem, setUploadModalItem] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -263,9 +264,24 @@ export default function TemplatePage() {
     fetchTemplatesFromRustFS(false);
   }, []);
 
-  // Gabungkan template standar + template kustom yang dibuat pengguna
+  // Gabungkan template standar + template kustom yang dibuat pengguna (Anti Duplikasi)
   const allTemplates = useMemo(() => {
-    return [...INITIAL_TEMPLATES, ...customTemplates];
+    const map = new Map();
+    INITIAL_TEMPLATES.forEach((tmpl) => {
+      const key = (tmpl.file_target || tmpl.nama_template).toLowerCase();
+      map.set(key, tmpl);
+    });
+
+    customTemplates.forEach((cust) => {
+      const key = (cust.file_target || cust.nama_template).toLowerCase();
+      if (map.has(key)) {
+        map.set(key, { ...map.get(key), ...cust, isCustom: true });
+      } else {
+        map.set(key, { ...cust, isCustom: true });
+      }
+    });
+
+    return Array.from(map.values());
   }, [customTemplates]);
 
   // Gabungkan daftar template dengan status file aktual di Storage + Auto-Discover semua file yang ada di Storage
