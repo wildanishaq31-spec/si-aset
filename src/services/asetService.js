@@ -19,16 +19,33 @@ import { getCollectionByType, generateAssetId } from '../utils/assetHelpers';
  * Ambil semua data aset berdasarkan tipe.
  */
 export async function getAsetData(type) {
-  const colName = getCollectionByType(type);
-  const q = query(ref(db, colName), orderByChild('created_at'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => {
-      data.push({ id: child.key, ...child.val() });
-    });
+  try {
+    const colName = getCollectionByType(type);
+    const snap = await get(ref(db, colName));
+    if (!snap.exists()) return [];
+
+    const val = snap.val();
+    const data = [];
+
+    if (Array.isArray(val)) {
+      val.forEach((item, index) => {
+        if (item) {
+          data.push({ id: String(item.id || index), ...item });
+        }
+      });
+    } else if (typeof val === 'object' && val !== null) {
+      Object.entries(val).forEach(([key, item]) => {
+        if (item && typeof item === 'object') {
+          data.push({ id: String(item.id || key), ...item });
+        }
+      });
+    }
+
+    return data.reverse();
+  } catch (err) {
+    console.error(`getAsetData (${type}) error:`, err);
+    return [];
   }
-  return data.reverse(); // Realtime Database sorts ascending by default
 }
 
 /**

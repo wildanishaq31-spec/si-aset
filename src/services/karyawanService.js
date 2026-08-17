@@ -7,15 +7,32 @@ import { db } from './firebase';
 const COL = 'Karyawan';
 
 export async function getKaryawanData() {
-  const q = query(ref(db, COL), orderByChild('nama'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => {
-      data.push({ id: child.key, ...child.val() });
-    });
+  try {
+    const snap = await get(ref(db, COL));
+    if (!snap.exists()) return [];
+
+    const val = snap.val();
+    const data = [];
+
+    if (Array.isArray(val)) {
+      val.forEach((item, index) => {
+        if (item) {
+          data.push({ id: String(item.id || index), ...item });
+        }
+      });
+    } else if (typeof val === 'object' && val !== null) {
+      Object.entries(val).forEach(([key, item]) => {
+        if (item && typeof item === 'object') {
+          data.push({ id: String(item.id || key), ...item });
+        }
+      });
+    }
+
+    return data;
+  } catch (err) {
+    console.error('getKaryawanData error:', err);
+    return [];
   }
-  return data;
 }
 
 export async function saveKaryawanData(payload) {
