@@ -57,8 +57,13 @@ export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress)
     throw new Error(errorData.error || 'Gagal mengunggah foto ke storage gateway.');
   }
 
-  const { publicUrl, fileKey } = await res.json();
-  return { publicUrl, fileKey };
+  const { publicUrl, proxyUrl, fileKey, downloadUrl } = await res.json();
+  return {
+    publicUrl,
+    proxyUrl: proxyUrl || (fileKey ? `/api/storage?key=${encodeURIComponent(fileKey)}` : publicUrl),
+    fileKey,
+    downloadUrl,
+  };
 }
 
 /**

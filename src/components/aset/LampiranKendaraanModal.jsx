@@ -8,14 +8,28 @@ import { uploadFileToRustFS } from '../../services/storageService';
 /**
  * Helper untuk memastikan URL foto dapat dimuat langsung oleh browser via Serverless Proxy
  */
-function getValidImageSrc(url) {
-  if (!url) return null;
-  if (url.startsWith('blob:') || url.startsWith('data:')) return url;
-  if (url.includes('/si-aset/')) {
-    const key = decodeURIComponent(url.split('/si-aset/')[1]);
+function getValidImageSrc(url, fileKey) {
+  if (!url && !fileKey) return null;
+  if (url && url.startsWith('data:')) return url;
+  if (url && url.startsWith('blob:')) return null; // Abaikan blob URL kadaluarsa
+
+  let key = fileKey;
+  if (!key && url && url.includes('/si-aset/')) {
+    key = decodeURIComponent(url.split('/si-aset/')[1]);
+  }
+  if (!key && url && url.includes('key=')) {
+    key = decodeURIComponent(url.split('key=')[1].split('&')[0]);
+  }
+
+  if (key) {
     return `/api/storage?key=${encodeURIComponent(key)}`;
   }
-  return url;
+
+  if (url && url.startsWith('http') && !url.includes('drive.google.com')) {
+    return url;
+  }
+
+  return null;
 }
 
 /**
@@ -42,20 +56,24 @@ function parsePhotoList(raw) {
     }
   }
 
-  return parsed.map((item) => {
-    if (typeof item === 'string') {
-      const src = getValidImageSrc(item);
-      return { url: src, originalUrl: item, date: 'Foto Awal' };
-    }
-    const rawUrl = item.url || item.publicUrl || item.downloadUrl || '';
-    const src = getValidImageSrc(rawUrl);
-    return {
-      ...item,
-      url: src || rawUrl,
-      originalUrl: rawUrl,
-      date: item.date || 'Tersimpan',
-    };
-  });
+  return parsed
+    .map((item) => {
+      if (typeof item === 'string') {
+        const src = getValidImageSrc(item);
+        if (!src && item.startsWith('blob:')) return null;
+        return { url: src, originalUrl: item, date: 'Foto Awal' };
+      }
+      const rawUrl = item.url || item.publicUrl || item.downloadUrl || '';
+      const src = getValidImageSrc(rawUrl, item.fileKey);
+      return {
+        ...item,
+        url: src || rawUrl,
+        fileKey: item.fileKey || (rawUrl.includes('/si-aset/') ? decodeURIComponent(rawUrl.split('/si-aset/')[1]) : null),
+        originalUrl: rawUrl,
+        date: item.date || 'Tersimpan',
+      };
+    })
+    .filter(Boolean);
 }
 
 /**
@@ -127,11 +145,13 @@ export default function LampiranKendaraanModal({
     const localBlobUrl = URL.createObjectURL(file);
 
     try {
-      const { publicUrl, downloadUrl } = await uploadFileToRustFS(file, folder);
+      const { publicUrl, proxyUrl, fileKey } = await uploadFileToRustFS(file, folder);
+      const viewUrl = proxyUrl || (fileKey ? `/api/storage?key=${encodeURIComponent(fileKey)}` : publicUrl);
+
       const newEntry = {
-        url: downloadUrl || publicUrl,
+        url: viewUrl,
         publicUrl: publicUrl,
-        downloadUrl: downloadUrl,
+        fileKey: fileKey,
         previewUrl: localBlobUrl,
         date: getTodayDateStr(),
         fileName: file.name,
@@ -141,7 +161,7 @@ export default function LampiranKendaraanModal({
       const isInitialDummy = (list) => {
         if (!list || list.length === 0) return true;
         return list.every(
-          (x) => x.date === 'Foto Awal' || !x.url || x.url.includes('drive.google.com')
+          (x) => x.date === 'Foto Awal' || !x.url || x.url.includes('drive.google.com') || x.url.startsWith('blob:')
         );
       };
 
@@ -170,11 +190,18 @@ export default function LampiranKendaraanModal({
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Bersihkan previewUrl temporary blob sebelum disimpan permanen ke Firebase
+      const sanitizeList = (list) =>
+        list.map(({ previewUrl, ...rest }) => ({
+          ...rest,
+          url: rest.fileKey ? `/api/storage?key=${encodeURIComponent(rest.fileKey)}` : (rest.publicUrl || rest.url),
+        }));
+
       const payload = {
         ...item,
-        FOTO_STNK: JSON.stringify(stnkList),
-        FOTO_PAJAK: JSON.stringify(pajakList),
-        FOTO_KENDARAAN: JSON.stringify(kendaraanList),
+        FOTO_STNK: JSON.stringify(sanitizeList(stnkList)),
+        FOTO_PAJAK: JSON.stringify(sanitizeList(pajakList)),
+        FOTO_KENDARAAN: JSON.stringify(sanitizeList(kendaraanList)),
       };
       await onSave(payload);
       onClose();
