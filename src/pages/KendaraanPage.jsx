@@ -177,25 +177,25 @@ export default function KendaraanPage() {
     setConfirmDelete(null);
   };
 
-  // Table Columns Definition (100% Matching GAS layout + Responsive Wrap Text)
+  // Table Columns Definition (100% Matching GAS layout + Compact Responsive Fit)
   const columns = [
     {
       key: 'NAMA',
       label: 'Nama',
-      style: { minWidth: '120px', whiteSpace: 'normal' },
+      style: { minWidth: '95px', whiteSpace: 'normal' },
       render: (val) => <strong>{val || '-'}</strong>,
     },
     {
       key: 'NIP',
       label: 'NIP / Jabatan',
-      style: { minWidth: '140px', maxWidth: '180px', whiteSpace: 'normal' },
+      style: { minWidth: '115px', maxWidth: '140px', whiteSpace: 'normal' },
       render: (val, item) => (
         <div>
           <span className="small d-block text-muted">NIP: {val || '-'}</span>
           {item.JABATAN && (
             <span
               className="badge bg-secondary text-wrap text-start mt-1"
-              style={{ fontSize: '0.72rem', lineHeight: '1.3' }}
+              style={{ fontSize: '0.7rem', lineHeight: '1.2' }}
             >
               {item.JABATAN}
             </span>
@@ -206,13 +206,13 @@ export default function KendaraanPage() {
     {
       key: 'NAMA_BARANG',
       label: 'Jenis Barang / Merek / Nomor Polisi',
-      style: { minWidth: '160px', maxWidth: '230px', whiteSpace: 'normal' },
+      style: { minWidth: '130px', maxWidth: '180px', whiteSpace: 'normal' },
       render: (val, item) => (
         <div style={{ wordBreak: 'normal' }}>
-          <strong>{val || 'Kendaraan'}</strong>
+          <strong className="d-block">{val || 'Kendaraan'}</strong>
           <span className="small d-block text-muted">{item.MERK_TYPE || '-'}</span>
           {item.NO_POLISI && (
-            <span className="badge bg-dark mt-1" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+            <span className="badge bg-dark mt-1" style={{ fontSize: '0.72rem', letterSpacing: '0.5px' }}>
               {item.NO_POLISI}
             </span>
           )}
@@ -222,25 +222,25 @@ export default function KendaraanPage() {
     {
       key: 'NIBAR',
       label: 'NIBAR',
-      style: { minWidth: '120px', maxWidth: '140px', wordBreak: 'break-all', fontSize: '0.78rem' },
+      style: { minWidth: '85px', maxWidth: '110px', wordBreak: 'break-all', fontSize: '0.72rem' },
       render: (val) => <span className="text-secondary font-monospace">{val || '-'}</span>,
     },
     {
       key: 'UNIT_KERJA',
       label: 'Lokasi / Unit',
-      style: { minWidth: '110px', whiteSpace: 'normal' },
+      style: { minWidth: '95px', whiteSpace: 'normal' },
       render: (val, item) => val || item.LOKASI || '-',
     },
     {
       key: 'TAHUN',
       label: 'Tahun',
-      style: { width: '70px', textAlign: 'center' },
+      style: { width: '55px', textAlign: 'center' },
       render: (val) => val || '-',
     },
     {
       key: 'KONDISI_STATUS',
       label: 'Kondisi',
-      style: { width: '95px', textAlign: 'center' },
+      style: { width: '80px', textAlign: 'center' },
       render: (val) => {
         let badgeClass = 'bg-success';
         if (val === 'Rusak Ringan') badgeClass = 'bg-warning text-dark';
@@ -251,12 +251,12 @@ export default function KendaraanPage() {
     {
       key: 'PINDAH_TANGAN',
       label: 'Pindah Tangan',
-      style: { minWidth: '120px', textAlign: 'center' },
+      style: { minWidth: '105px', textAlign: 'center' },
       render: (val) => (
-        <span className="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
+        <span className="badge bg-light text-dark border d-inline-flex align-items-center gap-1" style={{ fontSize: '0.72rem' }}>
           <span
             className={`d-inline-block rounded-circle ${val === 'Ya' ? 'bg-warning' : 'bg-success'}`}
-            style={{ width: '8px', height: '8px' }}
+            style={{ width: '7px', height: '7px' }}
           />
           {val === 'Ya' ? 'Pindah Tangan' : 'Pemilik Utama'}
         </span>
