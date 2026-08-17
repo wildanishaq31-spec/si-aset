@@ -1,7 +1,8 @@
 // ============================================================
 // ImportExcelModal.jsx — Modal Upload Data dari Excel (Salin & Tempel)
 // ============================================================
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
+import notify from '../../utils/notify';
 
 const KENDARAAN_COLUMNS = [
   { key: 'NO', label: 'NO' },
@@ -99,7 +100,7 @@ export default function ImportExcelModal({
 
   const handleSave = async () => {
     if (parsedData.length === 0) {
-      alert('Belum ada data yang terdeteksi dari hasil tempel (paste).');
+      notify.warning('Belum ada data yang terdeteksi dari hasil tempel (paste).', 'Data Kosong');
       return;
     }
 
@@ -111,7 +112,7 @@ export default function ImportExcelModal({
       onClose();
     } catch (err) {
       console.error(err);
-      alert('Terjadi kesalahan saat menyimpan data: ' + err.message);
+      notify.error('Terjadi kesalahan saat menyimpan data: ' + err.message, 'Gagal Menyimpan');
       setSaveProgress(null);
     }
   };

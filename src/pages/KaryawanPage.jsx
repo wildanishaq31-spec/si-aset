@@ -1,7 +1,7 @@
 // ============================================================
 // KaryawanPage.jsx — Database Karyawan (Master Data)
 // ============================================================
-import { useEffect, useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   getKaryawanData,
   saveKaryawanData,
@@ -14,6 +14,7 @@ import ImportExcelModal from '../components/aset/ImportExcelModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { useAuth } from '../hooks/useAuth';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import notify from '../utils/notify';
 
 const FIELDS = [
   { name: 'NAMA', label: 'Nama Lengkap Karyawan', required: true, colClass: 'col-md-6' },
@@ -147,7 +148,7 @@ export default function KaryawanPage() {
   // Export CSV
   const handleExportCSV = () => {
     if (filtered.length === 0) {
-      alert('Tidak ada data karyawan yang dapat diekspor.');
+      notify.warning('Tidak ada data karyawan yang dapat diekspor.', 'Data Kosong');
       return;
     }
     const headers = ['NAMA', 'NIP', 'PANGKAT', 'JABATAN', 'NIK', 'STATUS', 'ALAMAT', 'UNIT_KERJA'];
@@ -169,23 +170,35 @@ export default function KaryawanPage() {
     link.href = url;
     link.download = `Data_Karyawan_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    notify.success('Data karyawan berhasil diunduh dalam format CSV/Excel!', 'Ekspor Berhasil');
   };
 
   // Bulk Import
   const handleBulkImport = async (rows) => {
-    await saveBulkKaryawanData(rows);
-    await fetchData();
-    alert(`Berhasil mengimpor ${rows.length} data karyawan ke dalam database!`);
+    try {
+      await saveBulkKaryawanData(rows);
+      await fetchData();
+      notify.success(`Berhasil mengimpor ${rows.length} data karyawan ke dalam database!`, 'Impor Berhasil');
+    } catch (err) {
+      notify.error(`Gagal mengimpor data: ${err.message}`, 'Impor Gagal');
+    }
   };
 
   // Save Single Form (Create or Edit)
   const handleSubmit = async (formData) => {
     setFormLoading(true);
+    const isEdit = Boolean(formData.id);
     try {
       await saveKaryawanData(formData);
       await fetchData();
       setShowForm(false);
       setSelectedItem(null);
+      notify.success(
+        `Data karyawan ${formData.NAMA || ''} berhasil disimpan!`,
+        isEdit ? 'Karyawan Diperbarui' : 'Karyawan Ditambahkan'
+      );
+    } catch (err) {
+      notify.error(`Gagal menyimpan data karyawan: ${err.message}`, 'Gagal Menyimpan');
     } finally {
       setFormLoading(false);
     }
@@ -193,10 +206,17 @@ export default function KaryawanPage() {
 
   // Delete
   const handleDelete = async () => {
-    if (!confirmDelete) return;
-    await deleteKaryawanData(confirmDelete.id);
-    await fetchData();
-    setConfirmDelete(null);
+    const target = confirmDelete;
+    if (!target) return;
+    try {
+      await deleteKaryawanData(target.id);
+      await fetchData();
+      notify.success(`Data karyawan ${target.NAMA || target.nama || ''} berhasil dihapus!`, 'Karyawan Dihapus');
+    } catch (err) {
+      notify.error(`Gagal menghapus data karyawan: ${err.message}`, 'Gagal Menghapus');
+    } finally {
+      setConfirmDelete(null);
+    }
   };
 
   // Table Columns Definition (100% Match Layout & Colorful Theme)

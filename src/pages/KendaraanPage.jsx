@@ -10,6 +10,7 @@ import AsetFormModal from '../components/aset/AsetFormModal';
 import AsetDetailModal from '../components/aset/AsetDetailModal';
 import LampiranKendaraanModal from '../components/aset/LampiranKendaraanModal';
 import ImportExcelModal from '../components/aset/ImportExcelModal';
+import notify from '../utils/notify';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const FIELDS = [
@@ -121,7 +122,7 @@ export default function KendaraanPage() {
   // CSV Export
   const handleExportCSV = () => {
     if (filteredData.length === 0) {
-      alert('Tidak ada data yang dapat diekspor.');
+      notify.warning('Tidak ada data kendaraan yang dapat diekspor.', 'Data Kosong');
       return;
     }
     const headers = [
@@ -141,12 +142,17 @@ export default function KendaraanPage() {
     link.href = url;
     link.download = `Data_Kendaraan_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    notify.success('Data kendaraan berhasil diunduh dalam format CSV/Excel!', 'Ekspor Berhasil');
   };
 
   // Bulk Import
   const handleBulkImport = async (rows) => {
-    await bulkSave(rows);
-    alert(`Berhasil mengimpor ${rows.length} data kendaraan ke dalam database!`);
+    try {
+      await bulkSave(rows);
+      notify.success(`Berhasil mengimpor ${rows.length} data kendaraan ke database!`, 'Impor Berhasil');
+    } catch (err) {
+      notify.error(`Gagal mengimpor data: ${err.message}`, 'Impor Gagal');
+    }
   };
 
   const handleEdit = (item) => { setSelectedItem(item); setShowForm(true); };
@@ -157,24 +163,43 @@ export default function KendaraanPage() {
   };
 
   const handleSaveLampiran = async (updatedData) => {
-    await save(updatedData);
+    try {
+      await save(updatedData);
+      notify.success('Lampiran foto kendaraan berhasil diperbarui di RustFS!', 'Lampiran Disimpan');
+    } catch (err) {
+      notify.error(`Gagal menyimpan lampiran: ${err.message}`, 'Simpan Gagal');
+    }
   };
 
   const handleSubmit = async (formData) => {
     setFormLoading(true);
+    const isEdit = Boolean(formData.id);
     try {
       await save(formData);
       setShowForm(false);
       setSelectedItem(null);
+      notify.success(
+        `Data kendaraan ${formData.NO_POLISI || formData.NAMA_BARANG || ''} berhasil disimpan!`,
+        isEdit ? 'Kendaraan Diperbarui' : 'Kendaraan Ditambahkan'
+      );
+    } catch (err) {
+      notify.error(`Gagal menyimpan data: ${err.message}`, 'Gagal Menyimpan');
     } finally {
       setFormLoading(false);
     }
   };
 
   const handleDelete = async () => {
-    if (!confirmDelete) return;
-    await remove(confirmDelete.id);
-    setConfirmDelete(null);
+    const target = confirmDelete;
+    if (!target) return;
+    try {
+      await remove(target.id);
+      notify.success(`Data kendaraan ${target.NO_POLISI || target.NAMA_BARANG || ''} berhasil dihapus!`, 'Kendaraan Dihapus');
+    } catch (err) {
+      notify.error(`Gagal menghapus data: ${err.message}`, 'Gagal Menghapus');
+    } finally {
+      setConfirmDelete(null);
+    }
   };
 
   // Table Columns Definition (100% Matching GAS layout + Compact Responsive Fit)

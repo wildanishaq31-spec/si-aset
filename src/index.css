@@ -351,3 +351,27 @@ body {
 .page-fade {
   animation: fadeIn 0.2s ease;
 }
+
+/* ---- SweetAlert2 Toast Custom Styling ---- */
+.si-aset-toast {
+  border-radius: 14px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.14) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  padding: 10px 16px !important;
+  font-family: var(--font-sans) !important;
+  background: #ffffff !important;
+}
+
+.si-aset-toast .swal2-title {
+  color: #0f172a !important;
+  margin: 0 !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.si-aset-toast .swal2-html-container {
+  color: #475569 !important;
+  font-size: 0.82rem !important;
+  margin: 4px 0 0 0 !important;
+}
+

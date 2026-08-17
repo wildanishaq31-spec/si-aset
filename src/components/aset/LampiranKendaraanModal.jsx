@@ -4,6 +4,7 @@
 // ============================================================
 import React, { useState, useEffect, useRef } from 'react';
 import { uploadFileToRustFS } from '../../services/storageService';
+import notify from '../../utils/notify';
 
 /**
  * Helper untuk memastikan URL foto dapat dimuat langsung oleh browser via Serverless Proxy
@@ -183,10 +184,14 @@ export default function LampiranKendaraanModal({
 
     try {
       await uploadFileToRustFS(file, folder);
+      notify.success(
+        `Foto ${category === 'stnk' ? 'STNK' : category === 'pajak' ? 'Pajak' : 'Kendaraan'} berhasil diunggah ke RustFS!`,
+        'Upload Berhasil'
+      );
       // Refresh daftar foto langsung dari RustFS
       await fetchPhotosFromRustFS();
     } catch (err) {
-      alert(`Gagal mengunggah foto ke RustFS: ${err.message}`);
+      notify.error(`Gagal mengunggah foto ke RustFS: ${err.message}`, 'Upload Gagal');
     } finally {
       setUploading((prev) => ({ ...prev, [category]: false }));
       e.target.value = ''; // reset file input
@@ -206,9 +211,10 @@ export default function LampiranKendaraanModal({
           LAMPIRAN_UPDATED_AT: new Date().toISOString(),
         });
       }
+      notify.success('Riwayat lampiran foto tersimpan di RustFS!', 'Lampiran Selesai');
       onClose();
     } catch (err) {
-      alert(`Pemberitahuan: ${err.message}`);
+      notify.error(`Terjadi kesalahan: ${err.message}`, 'Gagal Menyimpan');
     } finally {
       setSaving(false);
     }
