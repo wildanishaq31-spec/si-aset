@@ -110,37 +110,38 @@ export default function KaryawanPage() {
     });
   }, [data, search]);
 
-  // Statistik Jumlah Kepegawaian (Valid 100% sesuai nilai kolom STATUS)
+  // Statistik Jumlah Kepegawaian (Valid 100% Eksplisit sesuai isi kolom STATUS)
   const statusStats = useMemo(() => {
     let pns = 0;
     let pppk = 0;
     let pw = 0;
     let kontrak = 0;
-    let lainnya = 0;
+    let belumDiisi = 0;
 
     data.forEach((item) => {
-      const s = (item.STATUS || item.status || 'PPPK').trim().toUpperCase();
+      const s = (item.STATUS || item.status || '').trim();
+      const upper = s.toUpperCase();
 
-      if (s.includes('PW')) {
-        pw++;
-      } else if (s.includes('PNS')) {
+      if (upper === 'PNS') {
         pns++;
-      } else if (s.includes('PPPK')) {
+      } else if (upper === 'PPPK PW' || upper === 'PW') {
+        pw++;
+      } else if (upper === 'PPPK') {
         pppk++;
       } else if (
-        s.includes('HONOR') ||
-        s.includes('KONTRAK') ||
-        s.includes('NON ASN') ||
-        s.includes('PTT') ||
-        s.includes('THL')
+        upper === 'KONTRAK' ||
+        upper.includes('KONTRAK') ||
+        upper === 'HONOR' ||
+        upper === 'NON ASN' ||
+        upper === 'PTT'
       ) {
         kontrak++;
       } else {
-        lainnya++;
+        belumDiisi++;
       }
     });
 
-    return { pns, pppk, pw, kontrak, lainnya };
+    return { pns, pppk, pw, kontrak, belumDiisi };
   }, [data]);
 
   // Export CSV
@@ -229,19 +230,22 @@ export default function KaryawanPage() {
       key: 'STATUS',
       label: 'Status',
       render: (val, item) => {
-        const s = (val || item.status || 'PPPK').trim();
+        const s = (val || item.status || '').trim();
         const upper = s.toUpperCase();
-        let badgeClass = 'bg-primary';
-        if (upper.includes('PW')) badgeClass = 'bg-info text-dark';
-        else if (upper.includes('PNS')) badgeClass = 'bg-success';
-        else if (
-          upper.includes('HONOR') ||
+        if (upper === 'PNS') return <span className="badge bg-success px-2 py-1">PNS</span>;
+        if (upper === 'PPPK PW' || upper === 'PW') return <span className="badge bg-info text-dark px-2 py-1">PPPK PW</span>;
+        if (upper === 'PPPK') return <span className="badge bg-primary px-2 py-1">PPPK</span>;
+        if (
+          upper === 'KONTRAK' ||
           upper.includes('KONTRAK') ||
-          upper.includes('NON ASN')
-        )
-          badgeClass = 'bg-warning text-dark';
-
-        return <span className={`badge ${badgeClass} px-2 py-1`}>{s}</span>;
+          upper === 'HONOR' ||
+          upper === 'NON ASN' ||
+          upper === 'PTT'
+        ) {
+          return <span className="badge bg-warning text-dark px-2 py-1">Kontrak</span>;
+        }
+        if (s) return <span className="badge bg-secondary px-2 py-1">{s}</span>;
+        return <span className="text-muted small">-</span>;
       },
     },
     {
@@ -285,14 +289,12 @@ export default function KaryawanPage() {
               <span className="badge bg-info text-dark px-2 py-1 rounded-pill small">
                 🌟 PPPK PW: <strong>{statusStats.pw}</strong>
               </span>
-              {statusStats.kontrak > 0 && (
-                <span className="badge bg-warning text-dark px-2 py-1 rounded-pill small">
-                  📝 Kontrak / Non ASN: <strong>{statusStats.kontrak}</strong>
-                </span>
-              )}
-              {statusStats.lainnya > 0 && (
-                <span className="badge bg-secondary text-white px-2 py-1 rounded-pill small">
-                  📋 Lainnya: <strong>{statusStats.lainnya}</strong>
+              <span className="badge bg-warning text-dark px-2 py-1 rounded-pill small">
+                📝 Kontrak: <strong>{statusStats.kontrak}</strong>
+              </span>
+              {statusStats.belumDiisi > 0 && (
+                <span className="badge bg-light text-muted border px-2 py-1 rounded-pill small">
+                  ⚪ Belum Terisi: <strong>{statusStats.belumDiisi}</strong>
                 </span>
               )}
               {search && (
