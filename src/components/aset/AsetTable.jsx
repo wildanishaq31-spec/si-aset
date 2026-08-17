@@ -51,7 +51,9 @@ export default function AsetTable({
                   {col.label}
                 </th>
               ))}
-              <th style={{ width: '135px', textAlign: 'center' }}>AKSI</th>
+              <th style={{ width: '150px', minWidth: '150px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                AKSI
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -63,8 +65,8 @@ export default function AsetTable({
                     {col.render ? col.render(item[col.key], item) : (item[col.key] || '-')}
                   </td>
                 ))}
-                <td className="text-center">
-                  <div className="d-flex justify-content-center gap-1">
+                <td className="text-center" style={{ minWidth: '150px', whiteSpace: 'nowrap' }}>
+                  <div className="d-flex justify-content-center align-items-center gap-1">
                     {onLampiran && (
                       <button
                         className="btn-action-photo"

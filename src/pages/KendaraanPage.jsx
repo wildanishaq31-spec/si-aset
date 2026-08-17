@@ -177,17 +177,18 @@ export default function KendaraanPage() {
     setConfirmDelete(null);
   };
 
-  // Table Columns Definition (100% Matching GAS layout)
+  // Table Columns Definition (100% Matching GAS layout + Responsive Wrap Text)
   const columns = [
     {
       key: 'NAMA',
       label: 'Nama',
+      style: { minWidth: '120px', whiteSpace: 'normal' },
       render: (val) => <strong>{val || '-'}</strong>,
     },
     {
       key: 'NIP',
       label: 'NIP / Jabatan',
-      style: { maxWidth: '180px' },
+      style: { minWidth: '140px', maxWidth: '180px', whiteSpace: 'normal' },
       render: (val, item) => (
         <div>
           <span className="small d-block text-muted">NIP: {val || '-'}</span>
@@ -205,9 +206,9 @@ export default function KendaraanPage() {
     {
       key: 'NAMA_BARANG',
       label: 'Jenis Barang / Merek / Nomor Polisi',
-      style: { minWidth: '180px' },
+      style: { minWidth: '160px', maxWidth: '230px', whiteSpace: 'normal' },
       render: (val, item) => (
-        <div>
+        <div style={{ wordBreak: 'normal' }}>
           <strong>{val || 'Kendaraan'}</strong>
           <span className="small d-block text-muted">{item.MERK_TYPE || '-'}</span>
           {item.NO_POLISI && (
@@ -221,22 +222,25 @@ export default function KendaraanPage() {
     {
       key: 'NIBAR',
       label: 'NIBAR',
-      style: { maxWidth: '140px', wordBreak: 'break-all' },
-      render: (val) => <span className="small text-secondary">{val || '-'}</span>,
+      style: { minWidth: '120px', maxWidth: '140px', wordBreak: 'break-all', fontSize: '0.78rem' },
+      render: (val) => <span className="text-secondary font-monospace">{val || '-'}</span>,
     },
     {
       key: 'UNIT_KERJA',
       label: 'Lokasi / Unit',
+      style: { minWidth: '110px', whiteSpace: 'normal' },
       render: (val, item) => val || item.LOKASI || '-',
     },
     {
       key: 'TAHUN',
       label: 'Tahun',
+      style: { width: '70px', textAlign: 'center' },
       render: (val) => val || '-',
     },
     {
       key: 'KONDISI_STATUS',
       label: 'Kondisi',
+      style: { width: '95px', textAlign: 'center' },
       render: (val) => {
         let badgeClass = 'bg-success';
         if (val === 'Rusak Ringan') badgeClass = 'bg-warning text-dark';
@@ -247,6 +251,7 @@ export default function KendaraanPage() {
     {
       key: 'PINDAH_TANGAN',
       label: 'Pindah Tangan',
+      style: { minWidth: '120px', textAlign: 'center' },
       render: (val) => (
         <span className="badge bg-light text-dark border d-inline-flex align-items-center gap-1">
           <span
