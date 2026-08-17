@@ -112,7 +112,7 @@ export default function LampiranKendaraanModal({
   const kendaraanInputRef = useRef(null);
 
   useEffect(() => {
-    if (item) {
+    if (item && show) {
       const stnk = parsePhotoList(item.FOTO_STNK || item.foto_stnk);
       const pajak = parsePhotoList(item.FOTO_PAJAK || item.foto_pajak);
       const kdrn = parsePhotoList(item.FOTO_KENDARAAN || item.foto_kendaraan);
@@ -124,6 +124,33 @@ export default function LampiranKendaraanModal({
       setStnkIdx(Math.max(0, stnk.length - 1));
       setPajakIdx(Math.max(0, pajak.length - 1));
       setKendaraanIdx(Math.max(0, kdrn.length - 1));
+
+      // Jika ada slot foto yang belum ada di Firebase, auto-check file yang sudah di-upload di RustFS
+      if (stnk.length === 0 || pajak.length === 0 || kdrn.length === 0) {
+        fetch('/api/storage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_vehicle_photos' }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.success && data.photos) {
+              if (stnk.length === 0 && data.photos.stnk?.length > 0) {
+                setStnkList(data.photos.stnk);
+                setStnkIdx(data.photos.stnk.length - 1);
+              }
+              if (pajak.length === 0 && data.photos.pajak?.length > 0) {
+                setPajakList(data.photos.pajak);
+                setPajakIdx(data.photos.pajak.length - 1);
+              }
+              if (kdrn.length === 0 && data.photos.kendaraan?.length > 0) {
+                setKendaraanList(data.photos.kendaraan);
+                setKendaraanIdx(data.photos.kendaraan.length - 1);
+              }
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [item, show]);
 

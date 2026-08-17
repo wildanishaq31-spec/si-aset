@@ -144,6 +144,55 @@ export default async function handler(req, res) {
     }
 
     // ------------------------------------------------------------
+    // 3. ACTION: GET VEHICLE PHOTOS DIRECTLY FROM RUSTFS FOLDERS
+    // ------------------------------------------------------------
+    if (action === 'get_vehicle_photos') {
+      const categories = [
+        { key: 'stnk', folder: 'KENDARAAN/LAMPIRAN FOTO/FOTO STNK' },
+        { key: 'pajak', folder: 'KENDARAAN/LAMPIRAN FOTO/FOTO PAJAK' },
+        { key: 'kendaraan', folder: 'KENDARAAN/LAMPIRAN FOTO/FOTO KENDARAAN' },
+      ];
+
+      const result = {};
+
+      for (const cat of categories) {
+        try {
+          const command = new ListObjectsV2Command({
+            Bucket: bucket,
+            Prefix: `${cat.folder}/`,
+          });
+          const data = await s3.send(command);
+          const contents = (data.Contents || []).filter((f) => !f.Key.endsWith('/'));
+
+          result[cat.key] = contents
+            .map((file) => {
+              const dateStr = file.LastModified
+                ? new Date(file.LastModified).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  }).replace(/\//g, '-')
+                : 'Tersimpan';
+
+              return {
+                fileKey: file.Key,
+                url: `/api/storage?key=${encodeURIComponent(file.Key)}`,
+                publicUrl: `${endpoint}/${bucket}/${file.Key.split('/').map(encodeURIComponent).join('/')}`,
+                date: dateStr,
+                fileName: file.Key.split('/').pop(),
+                lastModified: file.LastModified,
+              };
+            })
+            .sort((a, b) => new Date(a.lastModified) - new Date(b.lastModified));
+        } catch (e) {
+          result[cat.key] = [];
+        }
+      }
+
+      return res.status(200).json({ success: true, photos: result });
+    }
+
+    // ------------------------------------------------------------
     // 2. ACTION: UPLOAD PRESIGNED (Alternative)
     // ------------------------------------------------------------
     if (action === 'upload') {
