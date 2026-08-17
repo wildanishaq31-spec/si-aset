@@ -263,13 +263,13 @@ export default function DashboardPage() {
           </button>
         </div>
         <div className="table-responsive">
-          <table className="table table-striped table-hover align-middle small mb-0">
-            <thead className="table-dark">
+          <table className="table modern-table align-middle small mb-0">
+            <thead>
               <tr>
-                <th style={{ width: '180px' }}>Waktu</th>
-                <th style={{ width: '160px' }}>User</th>
-                <th style={{ width: '140px' }}>Aksi</th>
-                <th>Detail Target</th>
+                <th style={{ width: '180px' }}>WAKTU</th>
+                <th style={{ width: '160px' }}>USER</th>
+                <th style={{ width: '140px' }}>AKSI</th>
+                <th>DETAIL TARGET</th>
               </tr>
             </thead>
             <tbody>

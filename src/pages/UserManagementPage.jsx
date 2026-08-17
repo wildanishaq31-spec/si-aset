@@ -43,11 +43,17 @@ export default function UserManagementPage() {
         <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>➕ Tambah User</button>
       </div>
 
-      <div style={{ background: 'white', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+      <div className="modern-table-container">
         <div className="table-responsive">
-          <table className="table table-sm table-hover">
-            <thead className="table-dark">
-              <tr><th>Nama</th><th>Email</th><th>Role</th><th>Status</th><th>Aksi</th></tr>
+          <table className="table modern-table align-middle">
+            <thead>
+              <tr>
+                <th>NAMA LENGKAP</th>
+                <th>EMAIL</th>
+                <th style={{ textAlign: 'center' }}>ROLE</th>
+                <th style={{ textAlign: 'center' }}>STATUS</th>
+                <th style={{ textAlign: 'center' }}>AKSI</th>
+              </tr>
             </thead>
             <tbody>
               {users.map((u) => (

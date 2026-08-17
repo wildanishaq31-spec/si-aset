@@ -42,13 +42,17 @@ export default function KalibrasiPage() {
         </div>
       </div>
 
-      <div style={{ background: 'white', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+      <div className="modern-table-container">
         <div className="table-responsive">
-          <table className="table table-sm table-hover">
-            <thead className="table-dark">
+          <table className="table modern-table align-middle">
+            <thead>
               <tr>
-                <th>#</th><th>Nama Alkes</th><th>Unit Kerja</th>
-                <th>Tgl. Pengajuan</th><th>Jadwal Kalibrasi</th><th>Status</th>
+                <th style={{ width: '50px', textAlign: 'center' }}>NO</th>
+                <th>NAMA ALKES</th>
+                <th>UNIT KERJA</th>
+                <th>TGL. PENGAJUAN</th>
+                <th>JADWAL KALIBRASI</th>
+                <th style={{ textAlign: 'center' }}>STATUS</th>
               </tr>
             </thead>
             <tbody>

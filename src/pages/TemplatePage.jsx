@@ -410,19 +410,19 @@ export default function TemplatePage() {
         </div>
       </div>
 
-      {/* Main Table Card (100% Match Gambar 2 Layout) */}
-      <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+      {/* Main Table Card (100% Match Gambar 2 Layout & Dark Navy Modern Theme) */}
+      <div className="modern-table-container">
         <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0" style={{ fontSize: '0.86rem' }}>
-            <thead className="table-light text-secondary border-bottom">
-              <tr className="text-uppercase fw-bold" style={{ fontSize: '0.74rem', letterSpacing: '0.5px' }}>
-                <th className="py-3 px-4" style={{ minWidth: '260px' }}>Judul Dokumen</th>
-                <th className="py-3 px-3 text-center" style={{ width: '170px' }}>Tipe File</th>
-                <th className="py-3 px-3 text-center" style={{ width: '220px' }}>Status Tag</th>
-                <th className="py-3 px-4 text-center" style={{ width: '150px' }}>Aksi</th>
+          <table className="table modern-table align-middle">
+            <thead>
+              <tr>
+                <th style={{ minWidth: '260px' }}>JUDUL DOKUMEN</th>
+                <th style={{ width: '170px', textAlign: 'center' }}>TIPE FILE</th>
+                <th style={{ width: '220px', textAlign: 'center' }}>STATUS TAG</th>
+                <th style={{ width: '150px', textAlign: 'center' }}>AKSI</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {loading ? (
                 <tr>
                   <td colSpan="4" className="py-5 text-center">

@@ -62,13 +62,16 @@ export default function RekapPage() {
           </div>
 
           {/* Data Table */}
-          <div style={{ background: 'white', borderRadius: '14px', padding: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+          <div className="modern-table-container">
             <div className="table-responsive">
-              <table className="table table-sm table-hover">
-                <thead className="table-dark">
+              <table className="table modern-table align-middle">
+                <thead>
                   <tr>
-                    <th>#</th><th>Nama Pemakai</th><th>Nama Barang</th>
-                    <th>Kondisi</th><th>Nilai Perolehan</th>
+                    <th style={{ width: '50px', textAlign: 'center' }}>NO</th>
+                    <th>NAMA PEMAKAI</th>
+                    <th>NAMA BARANG</th>
+                    <th style={{ textAlign: 'center' }}>KONDISI</th>
+                    <th>NILAI PEROLEHAN</th>
                   </tr>
                 </thead>
                 <tbody>

@@ -53,17 +53,18 @@ export default function PemeriksaanPage() {
             value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '220px' }} />
         </div>
 
-        <div className="table-responsive">
-          <table className="table table-sm table-hover">
-            <thead className="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Waktu</th>
-                <th>Plat Nomor</th>
-                <th>Penanggung Jawab</th>
-                <th>Jenis</th>
-              </tr>
-            </thead>
+        <div className="modern-table-container mt-2">
+          <div className="table-responsive">
+            <table className="table modern-table align-middle">
+              <thead>
+                <tr>
+                  <th style={{ width: '50px', textAlign: 'center' }}>NO</th>
+                  <th>WAKTU</th>
+                  <th>PLAT NOMOR</th>
+                  <th>PENANGGUNG JAWAB</th>
+                  <th>JENIS</th>
+                </tr>
+              </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr><td colSpan={5} className="text-center text-muted py-4">Tidak ada data</td></tr>
@@ -81,5 +82,6 @@ export default function PemeriksaanPage() {
         </div>
       </div>
     </div>
+  </div>
   );
 }
