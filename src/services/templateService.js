@@ -7,15 +7,24 @@ import { db } from './firebase';
 const COL = 'TemplateDokumen';
 
 export async function getTemplates() {
-  const q = query(ref(db, COL), orderByChild('jenis_aset'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => {
-      data.push({ id: child.key, ...child.val() });
-    });
+  try {
+    const snap = await get(ref(db, COL));
+    const data = [];
+    if (snap.exists()) {
+      const val = snap.val();
+      if (Array.isArray(val)) {
+        val.forEach((item, idx) => { if (item) data.push({ id: String(item.id || idx), ...item }); });
+      } else if (typeof val === 'object' && val !== null) {
+        Object.entries(val).forEach(([key, item]) => {
+          if (item && typeof item === 'object') data.push({ id: String(item.id || key), ...item });
+        });
+      }
+    }
+    return data;
+  } catch (err) {
+    console.error('getTemplates error:', err);
+    return [];
   }
-  return data;
 }
 
 export async function saveTemplate(id, isiTemplate) {

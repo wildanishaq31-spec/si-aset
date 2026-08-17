@@ -88,13 +88,22 @@ export async function saveDokumenHistory(payload) {
  * Ambil semua riwayat dokumen.
  */
 export async function getDokumenHistory() {
-  const q = query(ref(db, 'Dokumen'), orderByChild('created_at'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => {
-      data.push({ id: child.key, ...child.val() });
-    });
+  try {
+    const snap = await get(ref(db, 'Dokumen'));
+    const data = [];
+    if (snap.exists()) {
+      const val = snap.val();
+      if (Array.isArray(val)) {
+        val.forEach((item, idx) => { if (item) data.push({ id: String(item.id || idx), ...item }); });
+      } else if (typeof val === 'object' && val !== null) {
+        Object.entries(val).forEach(([key, item]) => {
+          if (item && typeof item === 'object') data.push({ id: String(item.id || key), ...item });
+        });
+      }
+    }
+    return data.reverse();
+  } catch (err) {
+    console.error('getDokumenHistory error:', err);
+    return [];
   }
-  return data.reverse();
 }

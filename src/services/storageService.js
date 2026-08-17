@@ -12,20 +12,40 @@
 export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress) {
   if (!file) throw new Error('File tidak boleh kosong.');
 
-  // 1. Minta Presigned URL ke API Gateway (Vercel Serverless)
-  const res = await fetch('/api/storage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'upload',
-      fileName: file.name,
-      folder,
-      contentType: file.type || 'application/octet-stream',
-    }),
-  });
+  const payload = {
+    action: 'upload',
+    fileName: file.name,
+    folder,
+    contentType: file.type || 'application/octet-stream',
+  };
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
+  // 1. Minta Presigned URL ke API Gateway (Vercel Serverless atau Dev Proxy)
+  let res;
+  try {
+    res = await fetch('/api/storage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    // Fallback jika fetch lokal gagal
+  }
+
+  // Jika di localhost /api/storage 404, fallback ke live gateway
+  if (!res || !res.ok) {
+    try {
+      res = await fetch('https://si-aset-bice.vercel.app/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      // lanjut ke validasi res di bawah
+    }
+  }
+
+  if (!res || !res.ok) {
+    const errorData = res ? await res.json().catch(() => ({})) : {};
     throw new Error(errorData.error || 'Gagal meminta izin unggah ke storage gateway.');
   }
 
