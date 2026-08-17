@@ -44,10 +44,11 @@ export default async function handler(req, res) {
   }
 
   // ------------------------------------------------------------
-  // STREAMING VIEW PROXY (GET request - Pasti Bisa Diakses Browser Mana Pun Tanpa CORS)
+  // STREAMING & DOWNLOAD PROXY (GET request - Pasti Bisa Diakses Browser Mana Pun)
   // ------------------------------------------------------------
   if (req.method === 'GET') {
     const key = req.query.key;
+    const isDownload = req.query.download === '1' || req.query.download === 'true';
     if (!key) {
       return res.status(400).send('Parameter key wajib disertakan.');
     }
@@ -57,13 +58,29 @@ export default async function handler(req, res) {
         Key: key,
       });
       const data = await s3.send(command);
-      res.setHeader('Content-Type', data.ContentType || 'image/jpeg');
+
+      const fileName = key.split('/').pop() || 'dokumen';
+      const ext = fileName.split('.').pop()?.toLowerCase();
+
+      let mimeType = data.ContentType || 'application/octet-stream';
+      if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      else if (ext === 'xlsx') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      else if (ext === 'pdf') mimeType = 'application/pdf';
+      else if (ext === 'jpg' || ext === 'jpeg') mimeType = 'image/jpeg';
+      else if (ext === 'png') mimeType = 'image/png';
+
+      res.setHeader('Content-Type', mimeType);
+      if (isDownload) {
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+      } else {
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+      }
       res.setHeader('Cache-Control', 'public, max-age=86400');
       const byteArray = await data.Body.transformToByteArray();
       return res.send(Buffer.from(byteArray));
     } catch (err) {
-      console.error('Storage Proxy View Error:', err);
-      return res.status(404).send('Gambar tidak ditemukan di storage.');
+      console.error('Storage Proxy Error:', err);
+      return res.status(404).send('File tidak ditemukan di storage.');
     }
   }
 
@@ -75,7 +92,40 @@ export default async function handler(req, res) {
 
   try {
     // ------------------------------------------------------------
-    // 1. ACTION: UPLOAD DIRECT (Server-Side S3 PutObject - Bypass Browser CORS)
+    // 1. ACTION: GET TEMPLATES DIRECTLY FROM RUSTFS
+    // ------------------------------------------------------------
+    if (action === 'get_templates') {
+      try {
+        const command = new ListObjectsV2Command({
+          Bucket: bucket,
+          Prefix: 'TEMPLATE/',
+        });
+        const data = await s3.send(command);
+        const files = (data.Contents || []).filter((f) => !f.Key.endsWith('/'));
+
+        const templates = files.map((file) => {
+          const cleanFileName = file.Key.split('/').pop();
+          const ext = cleanFileName.split('.').pop()?.toLowerCase();
+
+          return {
+            fileKey: file.Key,
+            fileName: cleanFileName,
+            ext,
+            size: file.Size,
+            lastModified: file.LastModified,
+            url: `/api/storage?key=${encodeURIComponent(file.Key)}`,
+            downloadUrl: `/api/storage?key=${encodeURIComponent(file.Key)}&download=1`,
+          };
+        });
+
+        return res.status(200).json({ success: true, templates });
+      } catch (err) {
+        return res.status(200).json({ success: true, templates: [] });
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 2. ACTION: UPLOAD DIRECT (Server-Side S3 PutObject - Bypass Browser CORS)
     // ------------------------------------------------------------
     if (action === 'upload_direct' || fileBase64) {
       if (!fileName || !fileBase64) {
