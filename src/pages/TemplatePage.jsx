@@ -317,6 +317,16 @@ export default function TemplatePage() {
         localStorage.setItem('si_aset_template_cache', JSON.stringify(updatedRust));
       }
 
+      const finalJenisTemplate =
+        createForm.jenis_template === 'CUSTOM'
+          ? (createForm.custom_jenis_template || '').trim() || 'Dokumen Kustom'
+          : createForm.jenis_template;
+
+      const finalJenisAset =
+        createForm.jenis_aset === 'CUSTOM'
+          ? (createForm.custom_jenis_aset || '').trim() || 'Aset Kustom'
+          : createForm.jenis_aset;
+
       const defaultFileName =
         uploadedFileName ||
         `${createForm.nama_template.trim().replace(/[^a-zA-Z0-9]/g, '_').toUpperCase()}.${createForm.tipe_file.toLowerCase()}`;
@@ -324,8 +334,8 @@ export default function TemplatePage() {
       const newTmpl = {
         id: `T-CUST-${Date.now()}`,
         nama_template: createForm.nama_template.trim().toUpperCase(),
-        jenis_aset: createForm.jenis_aset,
-        jenis_template: createForm.jenis_template,
+        jenis_aset: finalJenisAset,
+        jenis_template: finalJenisTemplate,
         tipe_file: createForm.tipe_file,
         tag_count: createForm.tipe_file === 'DOCX' ? 10 : null,
         file_target: defaultFileName,
@@ -339,12 +349,14 @@ export default function TemplatePage() {
       setCustomTemplates(updatedCustom);
       localStorage.setItem('si_aset_custom_templates', JSON.stringify(updatedCustom));
 
-      notify.success(`Template ${newTmpl.nama_template} berhasil ditambahkan!`, 'Template Ditambahkan');
+      notify.success(`Template ${newTmpl.nama_template} (${finalJenisTemplate}) berhasil ditambahkan!`, 'Template Ditambahkan');
       setShowCreateModal(false);
       setCreateForm({
         nama_template: '',
         jenis_aset: 'Kendaraan',
+        custom_jenis_aset: '',
         jenis_template: 'Berita Acara',
+        custom_jenis_template: '',
         tipe_file: 'DOCX',
         description: '',
       });
@@ -823,8 +835,17 @@ export default function TemplatePage() {
 
                     {/* Kategori Aset */}
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold small text-dark">
-                        Kategori Aset <span className="text-danger">*</span>
+                      <label className="form-label fw-semibold small text-dark d-flex justify-content-between align-items-center">
+                        <span>Kategori Aset <span className="text-danger">*</span></span>
+                        {createForm.jenis_aset === 'CUSTOM' && (
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm p-0 text-decoration-none small"
+                            onClick={() => setCreateForm({ ...createForm, jenis_aset: 'Kendaraan', custom_jenis_aset: '' })}
+                          >
+                            ↺ Kembali ke Pilihan
+                          </button>
+                        )}
                       </label>
                       <select
                         className="form-select"
@@ -837,13 +858,34 @@ export default function TemplatePage() {
                         <option value="Rumah Dinas">Rumah Dinas</option>
                         <option value="Alkes">Alat Kesehatan</option>
                         <option value="Lainnya">Lainnya</option>
+                        <option value="CUSTOM">✏️ + Tambah Kategori Manual (Ketik Sendiri)...</option>
                       </select>
+                      {createForm.jenis_aset === 'CUSTOM' && (
+                        <input
+                          type="text"
+                          className="form-control form-control-sm mt-2 border-primary"
+                          placeholder="Ketik kategori aset baru di sini..."
+                          value={createForm.custom_jenis_aset || ''}
+                          onChange={(e) => setCreateForm({ ...createForm, custom_jenis_aset: e.target.value })}
+                          required
+                          autoFocus
+                        />
+                      )}
                     </div>
 
                     {/* Jenis Dokumen */}
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold small text-dark">
-                        Jenis Dokumen <span className="text-danger">*</span>
+                      <label className="form-label fw-semibold small text-dark d-flex justify-content-between align-items-center">
+                        <span>Jenis Dokumen <span className="text-danger">*</span></span>
+                        {createForm.jenis_template === 'CUSTOM' && (
+                          <button
+                            type="button"
+                            className="btn btn-link btn-sm p-0 text-decoration-none small"
+                            onClick={() => setCreateForm({ ...createForm, jenis_template: 'Berita Acara', custom_jenis_template: '' })}
+                          >
+                            ↺ Kembali ke Pilihan
+                          </button>
+                        )}
                       </label>
                       <select
                         className="form-select"
@@ -855,8 +897,22 @@ export default function TemplatePage() {
                         <option value="Daftar Peminjam">Daftar Peminjam</option>
                         <option value="Daftar Penandatangan">Daftar Penandatangan</option>
                         <option value="Pemeriksaan">Pemeriksaan / Checklist</option>
+                        <option value="Surat Keputusan">Surat Keputusan (SK)</option>
+                        <option value="Surat Izin / Tugas">Surat Izin / Tugas</option>
                         <option value="Dokumen Lainnya">Dokumen Lainnya</option>
+                        <option value="CUSTOM">✏️ + Tambah Manual (Ketik Jenis Dokumen Sendiri)...</option>
                       </select>
+                      {createForm.jenis_template === 'CUSTOM' && (
+                        <input
+                          type="text"
+                          className="form-control form-control-sm mt-2 border-primary"
+                          placeholder="Ketik jenis dokumen baru (misal: Berita Acara Kerusakan, dll.)..."
+                          value={createForm.custom_jenis_template || ''}
+                          onChange={(e) => setCreateForm({ ...createForm, custom_jenis_template: e.target.value })}
+                          required
+                          autoFocus
+                        />
+                      )}
                     </div>
 
                     {/* Format / Tipe File */}
