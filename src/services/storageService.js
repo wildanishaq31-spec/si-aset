@@ -1,25 +1,33 @@
-// ============================================================
-// storageService.js — Client-Side Helper untuk Upload ke RustFS via Presigned URL
-// ============================================================
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+}
 
 /**
- * Upload file langsung ke RustFS menggunakan Presigned URL dari Vercel /api/storage
+ * Upload file langsung ke RustFS melalui Serverless Security Gateway (Bypass Browser CORS)
  * @param {File} file - Object File dari input file HTML atau kamera
- * @param {string} folder - Sub-folder tujuan di RustFS (misal: 'FOTO ASET/KENDARAAN', 'DOKUMEN ASET')
+ * @param {string} folder - Sub-folder tujuan di RustFS (misal: 'KENDARAAN/LAMPIRAN FOTO/FOTO STNK')
  * @param {function} onProgress - Callback progres upload opsional
  * @returns {Promise<{ publicUrl: string, fileKey: string }>}
  */
 export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress) {
   if (!file) throw new Error('File tidak boleh kosong.');
 
+  const fileBase64 = await fileToBase64(file);
+
   const payload = {
-    action: 'upload',
+    action: 'upload_direct',
     fileName: file.name,
     folder,
-    contentType: file.type || 'application/octet-stream',
+    contentType: file.type || 'image/jpeg',
+    fileBase64,
   };
 
-  // 1. Minta Presigned URL ke API Gateway (Vercel Serverless atau Dev Proxy)
+  // 1. Kirim langsung ke API Gateway (Bypass CORS browser)
   let res;
   try {
     res = await fetch('/api/storage', {
@@ -31,7 +39,7 @@ export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress)
     // Fallback jika fetch lokal gagal
   }
 
-  // Jika di localhost /api/storage 404, fallback ke live gateway
+  // Jika di localhost /api/storage belum siap, fallback ke live gateway
   if (!res || !res.ok) {
     try {
       res = await fetch('https://si-aset-bice.vercel.app/api/storage', {
@@ -46,24 +54,10 @@ export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress)
 
   if (!res || !res.ok) {
     const errorData = res ? await res.json().catch(() => ({})) : {};
-    throw new Error(errorData.error || 'Gagal meminta izin unggah ke storage gateway.');
+    throw new Error(errorData.error || 'Gagal mengunggah foto ke storage gateway.');
   }
 
-  const { uploadUrl, publicUrl, fileKey } = await res.json();
-
-  // 2. Upload file binary langsung ke RustFS via PUT Presigned URL
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': file.type || 'application/octet-stream',
-    },
-    body: file,
-  });
-
-  if (!uploadRes.ok) {
-    throw new Error(`Gagal mengunggah file ke RustFS. Status: ${uploadRes.status}`);
-  }
-
+  const { publicUrl, fileKey } = await res.json();
   return { publicUrl, fileKey };
 }
 

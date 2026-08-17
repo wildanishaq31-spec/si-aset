@@ -15,7 +15,7 @@ export async function getDashboardStats() {
       get(ref(db, 'Peralatan')),
       get(ref(db, 'Dokumen')),
       get(ref(db, 'Alkes')),
-      get(query(ref(db, 'AuditLog'), orderByChild('created_at'), limitToLast(15))),
+      get(ref(db, 'AuditLog')),
     ]);
 
     let totalKendaraan = 0;

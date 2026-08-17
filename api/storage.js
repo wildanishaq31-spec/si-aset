@@ -47,11 +47,41 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed. Use POST.' });
   }
 
-  const { action, fileName, folder = 'FOTO ASET', fileKey, contentType } = req.body || {};
+  const { action, fileName, folder = 'FOTO ASET', fileKey, contentType, fileBase64 } = req.body || {};
 
   try {
     // ------------------------------------------------------------
-    // 1. ACTION: UPLOAD (Generate Presigned PUT URL)
+    // 1. ACTION: UPLOAD DIRECT (Server-Side S3 PutObject - Bypass Browser CORS)
+    // ------------------------------------------------------------
+    if (action === 'upload_direct' || fileBase64) {
+      if (!fileName || !fileBase64) {
+        return res.status(400).json({ error: 'fileName dan fileBase64 wajib diisi.' });
+      }
+
+      const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const key = `${folder}/${Date.now()}_${cleanFileName}`;
+      const base64Data = fileBase64.replace(/^data:[^;]+;base64,/, '');
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType || 'image/jpeg',
+      });
+
+      await s3.send(command);
+      const publicUrl = `${endpoint}/${bucket}/${key}`;
+
+      return res.status(200).json({
+        success: true,
+        fileKey: key,
+        publicUrl,
+      });
+    }
+
+    // ------------------------------------------------------------
+    // 2. ACTION: UPLOAD PRESIGNED (Alternative)
     // ------------------------------------------------------------
     if (action === 'upload') {
       if (!fileName) {

@@ -207,7 +207,7 @@ export default function LampiranKendaraanModal({
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src =
-                        'https://via.placeholder.com/300x200?text=Foto+Tidak+Dapat+Dimuat';
+                        "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'><rect fill='%23f1f5f9' width='300' height='200'/><text fill='%2364748b' font-family='sans-serif' font-size='14' font-weight='bold' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'>Foto Belum Tersedia</text></svg>";
                     }}
                   />
 
