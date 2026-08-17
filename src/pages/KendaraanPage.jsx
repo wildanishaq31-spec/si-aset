@@ -88,9 +88,9 @@ export default function KendaraanPage() {
     return [...new Set(units)];
   }, [data]);
 
-  // Filtered Data
+  // Filtered & Sorted Data (Preserving exact Spreadsheet & Firebase Sequence)
   const filteredData = useMemo(() => {
-    return data.filter((item) => {
+    const list = data.filter((item) => {
       const matchSearch =
         !search ||
         [item.NAMA, item.NIP, item.NAMA_BARANG, item.NO_POLISI, item.MERK_TYPE, item.NIBAR]
@@ -101,6 +101,17 @@ export default function KendaraanPage() {
       const matchPindah = !filterPindah || item.PINDAH_TANGAN === filterPindah;
 
       return matchSearch && matchUnit && matchKondisi && matchPindah;
+    });
+
+    return [...list].sort((a, b) => {
+      const noA = Number(a.NO || a.no);
+      const noB = Number(b.NO || b.no);
+      if (!isNaN(noA) && !isNaN(noB) && noA !== 0 && noB !== 0) {
+        return noA - noB;
+      }
+      const idA = String(a.id || '');
+      const idB = String(b.id || '');
+      return idA.localeCompare(idB, undefined, { numeric: true });
     });
   }, [data, search, filterUnit, filterKondisi, filterPindah]);
 

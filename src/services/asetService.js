@@ -41,7 +41,17 @@ export async function getAsetData(type) {
       });
     }
 
-    return data.reverse();
+    // Urutkan data persis sesuai urutan NO asli Spreadsheet / ID Firebase (00001, 00002, dst.)
+    return data.sort((a, b) => {
+      const noA = Number(a.NO || a.no);
+      const noB = Number(b.NO || b.no);
+      if (!isNaN(noA) && !isNaN(noB) && noA !== 0 && noB !== 0) {
+        return noA - noB;
+      }
+      const idA = String(a.id || '');
+      const idB = String(b.id || '');
+      return idA.localeCompare(idB, undefined, { numeric: true });
+    });
   } catch (err) {
     console.error(`getAsetData (${type}) error:`, err);
     return [];
