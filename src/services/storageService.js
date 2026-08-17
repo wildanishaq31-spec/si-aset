@@ -1,36 +1,27 @@
-function fileToBase64(file, onProgress) {
+function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) {
-        const p = Math.round((e.loaded / e.total) * 15);
-        onProgress(Math.min(p, 15));
-      }
-    };
     reader.onload = () => resolve(reader.result);
     reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
   });
 }
 
 /**
  * Upload file langsung ke Storage melalui Serverless Security Gateway (Bypass Browser CORS)
- * Dilengkapi animasi persentase real-time 1% - 100%
+ * Dilengkapi animasi persentase real-time 1% - 100% yang halus dan responsif
  * @param {File} file - Object File dari input file HTML atau kamera
- * @param {string} folder - Sub-folder tujuan di Storage (misal: 'KENDARAAN/LAMPIRAN FOTO/FOTO STNK')
+ * @param {string} folder - Sub-folder tujuan di Storage (misal: 'TEMPLATE' atau 'KENDARAAN/...')
  * @param {function} onProgress - Callback progres upload opsional (progress: number 1-100)
  * @returns {Promise<{ publicUrl: string, fileKey: string }>}
  */
 export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress) {
   if (!file) throw new Error('File tidak boleh kosong.');
 
-  if (onProgress) onProgress(5);
+  if (onProgress) onProgress(15);
 
-  const fileBase64 = await fileToBase64(file, (p) => {
-    if (onProgress) onProgress(Math.max(5, p));
-  });
-
-  if (onProgress) onProgress(20);
+  const fileBase64 = await fileToBase64(file);
+  if (onProgress) onProgress(35);
 
   const payload = JSON.stringify({
     action: 'upload_direct',
@@ -43,18 +34,37 @@ export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress)
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     const targetUrl = '/api/storage';
+    let progressTimer = null;
+    let currentPercent = 35;
+
+    // Timer halus agar progres terus bergerak aktif saat server menulis ke disk
+    const startSmoothTick = () => {
+      if (progressTimer) return;
+      progressTimer = setInterval(() => {
+        if (currentPercent < 95) {
+          currentPercent += Math.floor(Math.random() * 3) + 1;
+          if (currentPercent > 95) currentPercent = 95;
+          if (onProgress) onProgress(currentPercent);
+        }
+      }, 150);
+    };
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) {
-        // Rentang progres upload jaringan dari 20% hingga 95%
-        const percent = 20 + Math.round((event.loaded / event.total) * 75);
-        onProgress(Math.min(percent, 95));
+        const uploadChunk = 35 + Math.round((event.loaded / event.total) * 45);
+        if (uploadChunk > currentPercent) {
+          currentPercent = uploadChunk;
+          onProgress(currentPercent);
+        }
       }
+      startSmoothTick();
     };
 
     xhr.onload = () => {
+      if (progressTimer) clearInterval(progressTimer);
+      if (onProgress) onProgress(100);
+
       if (xhr.status >= 200 && xhr.status < 300) {
-        if (onProgress) onProgress(100);
         try {
           const resJson = JSON.parse(xhr.responseText);
           resolve({
@@ -77,18 +87,20 @@ export async function uploadFileToRustFS(file, folder = 'FOTO ASET', onProgress)
     };
 
     xhr.onerror = () => {
+      if (progressTimer) clearInterval(progressTimer);
       reject(new Error('Koneksi ke storage gateway gagal.'));
     };
 
     xhr.open('POST', targetUrl, true);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(payload);
+    startSmoothTick();
   });
 }
 
 /**
  * Hapus file dari Storage via fileKey
- * @param {string} fileKey - Key file (misal: 'FOTO ASET/1786853791207_foto.jpg')
+ * @param {string} fileKey - Key file (misal: 'TEMPLATE/DAFTAR_PEMINJAM_KENDARAAN.xlsx')
  */
 export async function deleteFileFromRustFS(fileKey) {
   if (!fileKey) return;

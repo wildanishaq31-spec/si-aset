@@ -133,7 +133,8 @@ export default async function handler(req, res) {
       }
 
       const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const key = `${folder}/${Date.now()}_${cleanFileName}`;
+      // Untuk folder TEMPLATE gunakan nama file asli agar langsung menggantikan master sebelumnya
+      const key = folder === 'TEMPLATE' ? `${folder}/${cleanFileName}` : `${folder}/${Date.now()}_${cleanFileName}`;
       const base64Data = fileBase64.replace(/^data:[^;]+;base64,/, '');
       const buffer = Buffer.from(base64Data, 'base64');
 
@@ -141,7 +142,7 @@ export default async function handler(req, res) {
         Bucket: bucket,
         Key: key,
         Body: buffer,
-        ContentType: contentType || 'image/jpeg',
+        ContentType: contentType || 'application/octet-stream',
       });
 
       await s3.send(command);
@@ -149,15 +150,7 @@ export default async function handler(req, res) {
       const encodedKey = key.split('/').map(encodeURIComponent).join('/');
       const publicUrl = `${endpoint}/${bucket}/${encodedKey}`;
       const proxyUrl = `/api/storage?key=${encodeURIComponent(key)}`;
-
-      // Buat presigned GET URL (berlaku 7 hari)
-      let downloadUrl = proxyUrl;
-      try {
-        const getCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
-        downloadUrl = await getSignedUrl(s3, getCmd, { expiresIn: 604800 });
-      } catch (e) {
-        // fallback to proxyUrl
-      }
+      const downloadUrl = `/api/storage?key=${encodeURIComponent(key)}&download=1`;
 
       return res.status(200).json({
         success: true,
