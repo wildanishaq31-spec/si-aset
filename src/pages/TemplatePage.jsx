@@ -7,7 +7,7 @@ import { uploadFileToRustFS } from '../services/storageService';
 import notify from '../utils/notify';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
-// Daftar 9 Master Template Standar Resmi (100% Match Spesifikasi GAS)
+// Daftar Master Template Standar Resmi (100% Match Spesifikasi GAS & Storage)
 const INITIAL_TEMPLATES = [
   {
     id: 'T-001',
@@ -117,6 +117,66 @@ const INITIAL_TEMPLATES = [
     fileKey: 'TEMPLATE/MASTER_PEMERIKSAAN_MOBIL.docx',
     description: 'Template Word Lembar Checklist Pemeriksaan Fisik & Mesin Mobil',
   },
+  {
+    id: 'T-010',
+    nama_template: 'MASTER PEMERIKSAAN SEPEDA MOTOR',
+    jenis_aset: 'Kendaraan',
+    jenis_template: 'Pemeriksaan Motor',
+    tipe_file: 'DOCX',
+    tag_count: 10,
+    file_target: 'MASTER_PEMERIKSAAN_SEPEDA_MOTOR.docx',
+    folder: 'TEMPLATE',
+    fileKey: 'TEMPLATE/MASTER_PEMERIKSAAN_SEPEDA_MOTOR.docx',
+    description: 'Template Word Lembar Checklist Pemeriksaan Fisik Sepeda Motor',
+  },
+  {
+    id: 'T-011',
+    nama_template: 'MASTER DATA KENDARAAN',
+    jenis_aset: 'Kendaraan',
+    jenis_template: 'Master Data',
+    tipe_file: 'XLSX',
+    tag_count: null,
+    file_target: 'MASTER_DATA_KENDARAAN.xlsx',
+    folder: 'TEMPLATE',
+    fileKey: 'TEMPLATE/MASTER_DATA_KENDARAAN.xlsx',
+    description: 'Template Excel Rekapitulasi Data Induk Kendaraan Dinas',
+  },
+  {
+    id: 'T-012',
+    nama_template: 'MASTER DATA PERALATAN',
+    jenis_aset: 'Peralatan',
+    jenis_template: 'Master Data',
+    tipe_file: 'XLSX',
+    tag_count: null,
+    file_target: 'MASTER_DATA_PERALATAN.xlsx',
+    folder: 'TEMPLATE',
+    fileKey: 'TEMPLATE/MASTER_DATA_PERALATAN.xlsx',
+    description: 'Template Excel Rekapitulasi Data Induk Peralatan Kerja Kantor',
+  },
+  {
+    id: 'T-013',
+    nama_template: 'MASTER DATA RUMAH DINAS',
+    jenis_aset: 'Rumah Dinas',
+    jenis_template: 'Master Data',
+    tipe_file: 'XLSX',
+    tag_count: null,
+    file_target: 'MASTER_DATA_RUMAH_DINAS.xlsx',
+    folder: 'TEMPLATE',
+    fileKey: 'TEMPLATE/MASTER_DATA_RUMAH_DINAS.xlsx',
+    description: 'Template Excel Rekapitulasi Data Induk Bangunan Rumah Dinas',
+  },
+  {
+    id: 'T-014',
+    nama_template: 'MASTER BA RUMAH DINAS',
+    jenis_aset: 'Rumah Dinas',
+    jenis_template: 'Berita Acara',
+    tipe_file: 'DOCX',
+    tag_count: 10,
+    file_target: 'MASTER_BA_RUMAH_DINAS.docx',
+    folder: 'TEMPLATE',
+    fileKey: 'TEMPLATE/MASTER_BA_RUMAH_DINAS.docx',
+    description: 'Template Word Berita Acara Pinjam Pakai Inventaris Bangunan Gedung Rumah Dinas',
+  },
 ];
 
 function formatBytes(bytes, decimals = 1) {
@@ -208,9 +268,9 @@ export default function TemplatePage() {
     return [...INITIAL_TEMPLATES, ...customTemplates];
   }, [customTemplates]);
 
-  // Gabungkan daftar template dengan status file aktual di Storage
+  // Gabungkan daftar template dengan status file aktual di Storage + Auto-Discover semua file yang ada di Storage
   const templateList = useMemo(() => {
-    return allTemplates.map((tmpl) => {
+    const list = allTemplates.map((tmpl) => {
       const matched = rustFiles.find((f) => {
         const cleanName = f.fileName?.toLowerCase() || '';
         const targetClean = tmpl.file_target?.toLowerCase() || '';
@@ -233,6 +293,65 @@ export default function TemplatePage() {
         downloadUrl: matched?.downloadUrl || `/api/storage?key=${encodeURIComponent(tmpl.fileKey)}&download=1`,
       };
     });
+
+    // Cari file di Storage TEMPLATE yang belum terdaftar di list (Auto-Discovery dari Storage)
+    rustFiles.forEach((rf) => {
+      const rfName = (rf.fileName || rf.fileKey?.split('/').pop() || '').toLowerCase();
+      if (!rfName) return;
+
+      const alreadyListed = list.some((item) => {
+        const targetClean = (item.file_target || '').toLowerCase();
+        const keyClean = (item.fileKey || '').toLowerCase();
+        return (
+          rfName === targetClean ||
+          (rf.fileKey && rf.fileKey.toLowerCase() === keyClean) ||
+          rfName.includes(targetClean.replace(/\.[^/.]+$/, ''))
+        );
+      });
+
+      if (!alreadyListed) {
+        const isDocx = rfName.endsWith('.docx') || rfName.endsWith('.doc');
+        const rawTitle = (rf.fileName || rf.fileKey?.split('/').pop() || '').replace(/\.[^/.]+$/, '');
+        const cleanTitle = rawTitle.replace(/_/g, ' ').toUpperCase();
+
+        const upper = cleanTitle.toUpperCase();
+        let guessedAset = 'Lainnya';
+        if (upper.includes('KENDARAAN') || upper.includes('MOBIL') || upper.includes('MOTOR')) guessedAset = 'Kendaraan';
+        else if (upper.includes('PERALATAN')) guessedAset = 'Peralatan';
+        else if (upper.includes('RUMAH') || upper.includes('GEDUNG') || upper.includes('BANGUNAN')) guessedAset = 'Rumah Dinas';
+        else if (upper.includes('MESIN')) guessedAset = 'Mesin';
+        else if (upper.includes('ALKES') || upper.includes('KESEHATAN')) guessedAset = 'Alkes';
+
+        let guessedJenis = 'Dokumen Master';
+        if (upper.includes('BERITA ACARA') || upper.includes(' BA ') || upper.startsWith('BA ')) guessedJenis = 'Berita Acara';
+        else if (upper.includes('PAKTA')) guessedJenis = 'Pakta Integritas';
+        else if (upper.includes('PEMERIKSAAN')) guessedJenis = 'Pemeriksaan';
+        else if (upper.includes('PEMINJAM')) guessedJenis = 'Daftar Peminjam';
+        else if (upper.includes('MASTER DATA') || upper.includes('DATA')) guessedJenis = 'Master Data';
+
+        list.push({
+          id: `T-AUTO-${rf.fileKey || rf.fileName}`,
+          nama_template: cleanTitle,
+          jenis_aset: guessedAset,
+          jenis_template: guessedJenis,
+          tipe_file: isDocx ? 'DOCX' : 'XLSX',
+          tag_count: isDocx ? 10 : null,
+          file_target: rf.fileName || rf.fileKey?.split('/').pop(),
+          folder: 'TEMPLATE',
+          fileKey: rf.fileKey,
+          description: `Master template untuk ${cleanTitle}`,
+          isUploaded: true,
+          isCustom: true,
+          fileName: rf.fileName,
+          fileSize: rf.size || 0,
+          lastModified: rf.lastModified,
+          url: rf.url || `/api/storage?key=${encodeURIComponent(rf.fileKey)}`,
+          downloadUrl: rf.downloadUrl || `/api/storage?key=${encodeURIComponent(rf.fileKey)}&download=1`,
+        });
+      }
+    });
+
+    return list;
   }, [allTemplates, rustFiles]);
 
   // Filter Data
