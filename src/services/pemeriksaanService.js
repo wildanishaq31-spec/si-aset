@@ -6,13 +6,23 @@ import { db } from './firebase';
 
 // --- Pemeriksaan Motor ---
 export async function getPemeriksaanData() {
-  const q = query(ref(db, 'Pemeriksaan'), orderByChild('waktu'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => { data.push({ id: child.key, ...child.val() }); });
+  try {
+    const snap = await get(ref(db, 'Pemeriksaan'));
+    if (!snap.exists()) return [];
+    const val = snap.val();
+    const data = [];
+    if (Array.isArray(val)) {
+      val.forEach((item, idx) => { if (item) data.push({ id: String(item.id || idx), ...item }); });
+    } else if (typeof val === 'object' && val !== null) {
+      Object.entries(val).forEach(([key, item]) => {
+        if (item && typeof item === 'object') data.push({ id: String(item.id || key), ...item });
+      });
+    }
+    return data.reverse();
+  } catch (err) {
+    console.error('getPemeriksaanData error:', err);
+    return [];
   }
-  return data.reverse();
 }
 
 export async function savePemeriksaanKendaraan(payload) {
@@ -27,13 +37,23 @@ export async function savePemeriksaanKendaraan(payload) {
 
 // --- Pemeriksaan Mobil ---
 export async function getPemeriksaanMobilData() {
-  const q = query(ref(db, 'Pemeriksaan_Mobil'), orderByChild('waktu'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => { data.push({ id: child.key, ...child.val() }); });
+  try {
+    const snap = await get(ref(db, 'Pemeriksaan_Mobil'));
+    if (!snap.exists()) return [];
+    const val = snap.val();
+    const data = [];
+    if (Array.isArray(val)) {
+      val.forEach((item, idx) => { if (item) data.push({ id: String(item.id || idx), ...item }); });
+    } else if (typeof val === 'object' && val !== null) {
+      Object.entries(val).forEach(([key, item]) => {
+        if (item && typeof item === 'object') data.push({ id: String(item.id || key), ...item });
+      });
+    }
+    return data.reverse();
+  } catch (err) {
+    console.error('getPemeriksaanMobilData error:', err);
+    return [];
   }
-  return data.reverse();
 }
 
 export async function savePemeriksaanMobil(payload) {
@@ -48,13 +68,23 @@ export async function savePemeriksaanMobil(payload) {
 
 // --- Pelaporan Pemeriksaan ---
 export async function getPelaporan() {
-  const q = query(ref(db, 'PelaporanPemeriksaan'), orderByChild('tanggal_jam'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => { data.push({ id: child.key, ...child.val() }); });
+  try {
+    const snap = await get(ref(db, 'PelaporanPemeriksaan'));
+    if (!snap.exists()) return [];
+    const val = snap.val();
+    const data = [];
+    if (Array.isArray(val)) {
+      val.forEach((item, idx) => { if (item) data.push({ id: String(item.id || idx), ...item }); });
+    } else if (typeof val === 'object' && val !== null) {
+      Object.entries(val).forEach(([key, item]) => {
+        if (item && typeof item === 'object') data.push({ id: String(item.id || key), ...item });
+      });
+    }
+    return data.reverse();
+  } catch (err) {
+    console.error('getPelaporan error:', err);
+    return [];
   }
-  return data.reverse();
 }
 
 export async function savePelaporan(payload) {

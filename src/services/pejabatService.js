@@ -7,15 +7,34 @@ import { db } from './firebase';
 const COL = 'Pejabat';
 
 export async function getPejabatData() {
-  const q = query(ref(db, COL), orderByChild('nama_pejabat'));
-  const snap = await get(q);
-  const data = [];
-  if (snap.exists()) {
-    snap.forEach((child) => {
-      data.push({ id: child.key, ...child.val() });
+  try {
+    const snap = await get(ref(db, COL));
+    if (!snap.exists()) return [];
+
+    const val = snap.val();
+    const data = [];
+
+    if (Array.isArray(val)) {
+      val.forEach((item, index) => {
+        if (item) data.push({ id: String(item.id || index), ...item });
+      });
+    } else if (typeof val === 'object' && val !== null) {
+      Object.entries(val).forEach(([key, item]) => {
+        if (item && typeof item === 'object') {
+          data.push({ id: String(item.id || key), ...item });
+        }
+      });
+    }
+
+    return data.sort((a, b) => {
+      const namaA = (a.NAMA || a.nama_pejabat || a.nama || '').trim();
+      const namaB = (b.NAMA || b.nama_pejabat || b.nama || '').trim();
+      return namaA.localeCompare(namaB, 'id', { sensitivity: 'base' });
     });
+  } catch (err) {
+    console.error('getPejabatData error:', err);
+    return [];
   }
-  return data;
 }
 
 export async function savePejabatData(payload) {
