@@ -274,7 +274,7 @@ export default async function handler(req, res) {
 
       // Bersihkan nama file dari karakter aneh
       const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
-      const key = `${folder}/${Date.now()}_${cleanFileName}`;
+      const key = folder === 'TEMPLATE' ? `${folder}/${cleanFileName}` : `${folder}/${Date.now()}_${cleanFileName}`;
 
       const command = new PutObjectCommand({
         Bucket: bucket,
@@ -285,12 +285,16 @@ export default async function handler(req, res) {
       // URL izin upload berlaku selama 15 menit (900 detik)
       const uploadUrl = await getSignedUrl(s3, command, { expiresIn: 900 });
       const publicUrl = `${endpoint}/${bucket}/${key}`;
+      const proxyUrl = `/api/storage?key=${encodeURIComponent(key)}`;
+      const downloadUrl = `/api/storage?key=${encodeURIComponent(key)}&download=1`;
 
       return res.status(200).json({
         success: true,
         uploadUrl,
         fileKey: key,
         publicUrl,
+        proxyUrl,
+        downloadUrl,
       });
     }
 
