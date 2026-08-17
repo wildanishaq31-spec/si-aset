@@ -12,24 +12,58 @@ export async function getKaryawanData() {
     if (!snap.exists()) return [];
 
     const val = snap.val();
-    const data = [];
+    const rawData = [];
 
     if (Array.isArray(val)) {
       val.forEach((item, index) => {
         if (item) {
-          data.push({ id: String(item.id || index), ...item });
+          rawData.push({ id: String(item.id || index), ...item });
         }
       });
     } else if (typeof val === 'object' && val !== null) {
       Object.entries(val).forEach(([key, item]) => {
         if (item && typeof item === 'object') {
-          data.push({ id: String(item.id || key), ...item });
+          rawData.push({ id: String(item.id || key), ...item });
         }
       });
     }
 
+    // Filter duplikat (deduplication) berdasarkan Nama & NIP
+    const seen = new Set();
+    const uniqueData = [];
+    const duplicateIdsToDelete = [];
+
+    rawData.forEach((item) => {
+      const cleanNama = (item.NAMA || item.nama || '').trim().toLowerCase();
+      const cleanNip = (item.NIP || item.nip || '').trim().replace(/\s+/g, '');
+      const uniqueKey = cleanNip ? `${cleanNama}__${cleanNip}` : cleanNama;
+
+      if (!uniqueKey) return;
+
+      if (!seen.has(uniqueKey)) {
+        seen.add(uniqueKey);
+        uniqueData.push(item);
+      } else {
+        // ID duplikat yang akan dibersihkan dari Firebase
+        if (item.id !== undefined && item.id !== null) {
+          duplicateIdsToDelete.push(item.id);
+        }
+      }
+    });
+
+    // Otomatis bersihkan data ganda di Firebase Realtime Database
+    if (duplicateIdsToDelete.length > 0) {
+      const deleteUpdates = {};
+      duplicateIdsToDelete.forEach((dupId) => {
+        deleteUpdates[`${COL}/${dupId}`] = null;
+      });
+      update(ref(db), deleteUpdates).catch((err) =>
+        console.warn('Gagal membersihkan duplikat otomatis:', err)
+      );
+    }
+
     // Sort A-Z by Nama
-    return data.sort((a, b) => {
+    return uniqueData.sort((a, b) => {
       const namaA = (a.NAMA || a.nama || '').trim();
       const namaB = (b.NAMA || b.nama || '').trim();
       return namaA.localeCompare(namaB, 'id', { sensitivity: 'base' });
@@ -60,10 +94,20 @@ export async function deleteKaryawanData(id) {
 export async function saveBulkKaryawanData(dataArray) {
   const updates = {};
   const now = serverTimestamp();
+  const seen = new Set();
+
   dataArray.forEach((item) => {
-    const id = item.id || `KR-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    updates[`${COL}/${id}`] = { ...item, id, created_at: now };
+    const cleanNama = (item.NAMA || item.nama || '').trim().toLowerCase();
+    const cleanNip = (item.NIP || item.nip || '').trim().replace(/\s+/g, '');
+    const uniqueKey = cleanNip ? `${cleanNama}__${cleanNip}` : cleanNama;
+
+    if (uniqueKey && !seen.has(uniqueKey)) {
+      seen.add(uniqueKey);
+      const id = item.id || `KR-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      updates[`${COL}/${id}`] = { ...item, id, created_at: now };
+    }
   });
+
   await update(ref(db), updates);
-  return { success: true, count: dataArray.length };
+  return { success: true, count: Object.keys(updates).length };
 }

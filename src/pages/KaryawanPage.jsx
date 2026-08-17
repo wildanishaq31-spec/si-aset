@@ -60,9 +60,23 @@ export default function KaryawanPage() {
     fetchData();
   }, []);
 
-  // Filtered & Sorted Karyawan list (A - Z)
+  // Filtered & Sorted Karyawan list (A - Z, No Duplicates)
   const filtered = useMemo(() => {
-    const list = data.filter((item) => {
+    const seen = new Set();
+    const uniqueList = [];
+
+    data.forEach((item) => {
+      const nama = (item.NAMA || item.nama || '').trim();
+      const nip = (item.NIP || item.nip || '').trim().replace(/\s+/g, '');
+      const key = nip ? `${nama.toLowerCase()}__${nip}` : nama.toLowerCase();
+
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        uniqueList.push(item);
+      }
+    });
+
+    const searchFiltered = uniqueList.filter((item) => {
       const nama = item.NAMA || item.nama || '';
       const nip = item.NIP || item.nip || '';
       const jabatan = item.JABATAN || item.jabatan || '';
@@ -78,7 +92,7 @@ export default function KaryawanPage() {
     });
 
     // Urutkan berdasarkan Nama Karyawan A - Z
-    return [...list].sort((a, b) => {
+    return searchFiltered.sort((a, b) => {
       const namaA = (a.NAMA || a.nama || '').trim();
       const namaB = (b.NAMA || b.nama || '').trim();
       return namaA.localeCompare(namaB, 'id', { sensitivity: 'base' });
