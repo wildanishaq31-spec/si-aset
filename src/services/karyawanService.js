@@ -28,7 +28,12 @@ export async function getKaryawanData() {
       });
     }
 
-    return data;
+    // Sort A-Z by Nama
+    return data.sort((a, b) => {
+      const namaA = (a.NAMA || a.nama || '').trim();
+      const namaB = (b.NAMA || b.nama || '').trim();
+      return namaA.localeCompare(namaB, 'id', { sensitivity: 'base' });
+    });
   } catch (err) {
     console.error('getKaryawanData error:', err);
     return [];

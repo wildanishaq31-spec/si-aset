@@ -60,9 +60,9 @@ export default function KaryawanPage() {
     fetchData();
   }, []);
 
-  // Filtered Karyawan list
+  // Filtered & Sorted Karyawan list (A - Z)
   const filtered = useMemo(() => {
-    return data.filter((item) => {
+    const list = data.filter((item) => {
       const nama = item.NAMA || item.nama || '';
       const nip = item.NIP || item.nip || '';
       const jabatan = item.JABATAN || item.jabatan || '';
@@ -75,6 +75,13 @@ export default function KaryawanPage() {
           v.toLowerCase().includes(search.toLowerCase())
         )
       );
+    });
+
+    // Urutkan berdasarkan Nama Karyawan A - Z
+    return [...list].sort((a, b) => {
+      const namaA = (a.NAMA || a.nama || '').trim();
+      const namaB = (b.NAMA || b.nama || '').trim();
+      return namaA.localeCompare(namaB, 'id', { sensitivity: 'base' });
     });
   }, [data, search]);
 
