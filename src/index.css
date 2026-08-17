@@ -238,6 +238,23 @@ body {
 }
 
 /* Modern Action Buttons */
+.btn-action-photo {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  transition: all 0.2s ease;
+}
+.btn-action-photo:hover {
+  background-color: #0284c7;
+  color: #ffffff;
+  border-color: #0284c7;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
 .btn-action-view {
   background-color: #f0f9ff;
   color: #0284c7;

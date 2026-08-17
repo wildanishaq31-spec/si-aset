@@ -14,6 +14,7 @@
 export default function AsetTable({
   data = [],
   columns = [],
+  onLampiran,
   onView,
   onEdit,
   onDelete,
@@ -50,7 +51,7 @@ export default function AsetTable({
                   {col.label}
                 </th>
               ))}
-              <th style={{ width: '120px', textAlign: 'center' }}>AKSI</th>
+              <th style={{ width: '135px', textAlign: 'center' }}>AKSI</th>
             </tr>
           </thead>
           <tbody>
@@ -64,13 +65,22 @@ export default function AsetTable({
                 ))}
                 <td className="text-center">
                   <div className="d-flex justify-content-center gap-1">
+                    {onLampiran && (
+                      <button
+                        className="btn-action-photo"
+                        onClick={() => onLampiran(item)}
+                        title="Lampiran / Foto Kendaraan"
+                      >
+                        🖼️
+                      </button>
+                    )}
                     {onView && (
                       <button
                         className="btn-action-view"
                         onClick={() => onView(item)}
                         title="Lihat Detail Data"
                       >
-                        ℹ️ Detail
+                        ℹ️
                       </button>
                     )}
                     {onEdit && (
@@ -79,7 +89,7 @@ export default function AsetTable({
                         onClick={() => onEdit(item)}
                         title="Ubah Data"
                       >
-                        ✏️ Edit
+                        ✏️
                       </button>
                     )}
                     {isAdmin && onDelete && (

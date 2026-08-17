@@ -8,6 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import AsetTable from '../components/aset/AsetTable';
 import AsetFormModal from '../components/aset/AsetFormModal';
 import AsetDetailModal from '../components/aset/AsetDetailModal';
+import LampiranKendaraanModal from '../components/aset/LampiranKendaraanModal';
 import ImportExcelModal from '../components/aset/ImportExcelModal';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 
@@ -72,7 +73,9 @@ export default function KendaraanPage() {
   const [showForm, setShowForm] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showLampiran, setShowLampiran] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedLampiranItem, setSelectedLampiranItem] = useState(null);
   const [formLoading, setFormLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -148,6 +151,14 @@ export default function KendaraanPage() {
 
   const handleEdit = (item) => { setSelectedItem(item); setShowForm(true); };
   const handleView = (item) => { setSelectedItem(item); setShowDetail(true); };
+  const handleOpenLampiran = (item) => {
+    setSelectedLampiranItem(item);
+    setShowLampiran(true);
+  };
+
+  const handleSaveLampiran = async (updatedData) => {
+    await save(updatedData);
+  };
 
   const handleSubmit = async (formData) => {
     setFormLoading(true);
@@ -363,11 +374,20 @@ export default function KendaraanPage() {
           columns={columns}
           loading={loading}
           isAdmin={isAdmin}
+          onLampiran={handleOpenLampiran}
           onView={handleView}
           onEdit={handleEdit}
           onDelete={(item) => setConfirmDelete(item)}
         />
       </div>
+
+      {/* Modal Lampiran Foto Kendaraan (STNK, Pajak, Fisik Kendaraan + RustFS History) */}
+      <LampiranKendaraanModal
+        show={showLampiran}
+        item={selectedLampiranItem}
+        onClose={() => setShowLampiran(false)}
+        onSave={handleSaveLampiran}
+      />
 
       {/* Upload dari Excel Modal */}
       <ImportExcelModal
