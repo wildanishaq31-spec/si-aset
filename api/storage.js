@@ -144,25 +144,54 @@ export default async function handler(req, res) {
     }
 
     // ------------------------------------------------------------
-    // 3. ACTION: GET VEHICLE PHOTOS DIRECTLY FROM RUSTFS FOLDERS
+    // 3. ACTION: GET VEHICLE PHOTOS DIRECTLY FROM RUSTFS FOLDERS (Single Source of Truth)
     // ------------------------------------------------------------
     if (action === 'get_vehicle_photos') {
+      const { vehicleId, nopol } = req.body || {};
+      const cleanTag = (nopol || vehicleId || '').replace(/[^a-zA-Z0-9]/g, '_');
+
       const categories = [
-        { key: 'stnk', folder: 'KENDARAAN/LAMPIRAN FOTO/FOTO STNK' },
-        { key: 'pajak', folder: 'KENDARAAN/LAMPIRAN FOTO/FOTO PAJAK' },
-        { key: 'kendaraan', folder: 'KENDARAAN/LAMPIRAN FOTO/FOTO KENDARAAN' },
+        {
+          key: 'stnk',
+          folder: cleanTag ? `KENDARAAN/${cleanTag}/LAMPIRAN FOTO/FOTO STNK` : null,
+          fallback: 'KENDARAAN/LAMPIRAN FOTO/FOTO STNK',
+        },
+        {
+          key: 'pajak',
+          folder: cleanTag ? `KENDARAAN/${cleanTag}/LAMPIRAN FOTO/FOTO PAJAK` : null,
+          fallback: 'KENDARAAN/LAMPIRAN FOTO/FOTO PAJAK',
+        },
+        {
+          key: 'kendaraan',
+          folder: cleanTag ? `KENDARAAN/${cleanTag}/LAMPIRAN FOTO/FOTO KENDARAAN` : null,
+          fallback: 'KENDARAAN/LAMPIRAN FOTO/FOTO KENDARAAN',
+        },
       ];
 
       const result = {};
 
       for (const cat of categories) {
         try {
-          const command = new ListObjectsV2Command({
-            Bucket: bucket,
-            Prefix: `${cat.folder}/`,
-          });
-          const data = await s3.send(command);
-          const contents = (data.Contents || []).filter((f) => !f.Key.endsWith('/'));
+          let contents = [];
+
+          if (cat.folder) {
+            const command = new ListObjectsV2Command({
+              Bucket: bucket,
+              Prefix: `${cat.folder}/`,
+            });
+            const data = await s3.send(command);
+            contents = (data.Contents || []).filter((f) => !f.Key.endsWith('/'));
+          }
+
+          // Jika folder spesifik nopol kosong, cek folder umum sebagai fallback
+          if (contents.length === 0 && cat.fallback) {
+            const fallbackCmd = new ListObjectsV2Command({
+              Bucket: bucket,
+              Prefix: `${cat.fallback}/`,
+            });
+            const fallbackData = await s3.send(fallbackCmd);
+            contents = (fallbackData.Contents || []).filter((f) => !f.Key.endsWith('/'));
+          }
 
           result[cat.key] = contents
             .map((file) => {

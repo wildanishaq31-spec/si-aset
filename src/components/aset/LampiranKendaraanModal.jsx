@@ -102,6 +102,7 @@ export default function LampiranKendaraanModal({
   const [kendaraanIdx, setKendaraanIdx] = useState(0);
 
   const [uploading, setUploading] = useState({ stnk: false, pajak: false, kendaraan: false });
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [zoomData, setZoomData] = useState(null);
   const [zoomScale, setZoomScale] = useState(1);
@@ -111,129 +112,103 @@ export default function LampiranKendaraanModal({
   const pajakInputRef = useRef(null);
   const kendaraanInputRef = useRef(null);
 
+  // Ambil data foto langsung dari RustFS Storage (Single Source of Truth)
+  const fetchPhotosFromRustFS = async () => {
+    if (!item) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/storage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'get_vehicle_photos',
+          nopol: item.NO_POLISI || '',
+          vehicleId: item.id || '',
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.photos) {
+        const stnk = data.photos.stnk || [];
+        const pajak = data.photos.pajak || [];
+        const kdrn = data.photos.kendaraan || [];
+
+        setStnkList(stnk);
+        setPajakList(pajak);
+        setKendaraanList(kdrn);
+
+        setStnkIdx(Math.max(0, stnk.length - 1));
+        setPajakIdx(Math.max(0, pajak.length - 1));
+        setKendaraanIdx(Math.max(0, kdrn.length - 1));
+      } else {
+        setStnkList([]);
+        setPajakList([]);
+        setKendaraanList([]);
+      }
+    } catch (err) {
+      console.warn('Gagal memuat foto dari RustFS:', err);
+      setStnkList([]);
+      setPajakList([]);
+      setKendaraanList([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (item && show) {
-      const stnk = parsePhotoList(item.FOTO_STNK || item.foto_stnk);
-      const pajak = parsePhotoList(item.FOTO_PAJAK || item.foto_pajak);
-      const kdrn = parsePhotoList(item.FOTO_KENDARAAN || item.foto_kendaraan);
-
-      setStnkList(stnk);
-      setPajakList(pajak);
-      setKendaraanList(kdrn);
-
-      setStnkIdx(Math.max(0, stnk.length - 1));
-      setPajakIdx(Math.max(0, pajak.length - 1));
-      setKendaraanIdx(Math.max(0, kdrn.length - 1));
-
-      // Jika ada slot foto yang belum ada di Firebase, auto-check file yang sudah di-upload di RustFS
-      if (stnk.length === 0 || pajak.length === 0 || kdrn.length === 0) {
-        fetch('/api/storage', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'get_vehicle_photos' }),
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data.success && data.photos) {
-              if (stnk.length === 0 && data.photos.stnk?.length > 0) {
-                setStnkList(data.photos.stnk);
-                setStnkIdx(data.photos.stnk.length - 1);
-              }
-              if (pajak.length === 0 && data.photos.pajak?.length > 0) {
-                setPajakList(data.photos.pajak);
-                setPajakIdx(data.photos.pajak.length - 1);
-              }
-              if (kdrn.length === 0 && data.photos.kendaraan?.length > 0) {
-                setKendaraanList(data.photos.kendaraan);
-                setKendaraanIdx(data.photos.kendaraan.length - 1);
-              }
-            }
-          })
-          .catch(() => {});
-      }
+      fetchPhotosFromRustFS();
+    } else {
+      setStnkList([]);
+      setPajakList([]);
+      setKendaraanList([]);
     }
   }, [item, show]);
 
   if (!show || !item) return null;
 
-  // Handle Upload Foto ke RustFS
+  const cleanTag = (item.NO_POLISI || item.id || 'KDRN').replace(/[^a-zA-Z0-9]/g, '_');
+
+  // Handle Upload Foto langsung ke RustFS
   const handleUploadFile = async (e, category) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Sub-folder terstruktur sesuai standar RustFS
-    let folder = 'KENDARAAN/LAMPIRAN FOTO/FOTO KENDARAAN';
-    if (category === 'stnk') folder = 'KENDARAAN/LAMPIRAN FOTO/FOTO STNK';
-    if (category === 'pajak') folder = 'KENDARAAN/LAMPIRAN FOTO/FOTO PAJAK';
+    let subFolder = 'FOTO KENDARAAN';
+    if (category === 'stnk') subFolder = 'FOTO STNK';
+    if (category === 'pajak') subFolder = 'FOTO PAJAK';
+
+    const folder = `KENDARAAN/${cleanTag}/LAMPIRAN FOTO/${subFolder}`;
 
     setUploading((prev) => ({ ...prev, [category]: true }));
 
-    // Buat URL preview lokal langsung agar foto langsung tampil seketika
-    const localBlobUrl = URL.createObjectURL(file);
-
     try {
-      const { publicUrl, proxyUrl, fileKey } = await uploadFileToRustFS(file, folder);
-      const viewUrl = proxyUrl || (fileKey ? `/api/storage?key=${encodeURIComponent(fileKey)}` : publicUrl);
-
-      const newEntry = {
-        url: viewUrl,
-        publicUrl: publicUrl,
-        fileKey: fileKey,
-        previewUrl: localBlobUrl,
-        date: getTodayDateStr(),
-        fileName: file.name,
-      };
-
-      // Cek apakah data sebelumnya hanya berisi dummy "Foto Awal" / link lama
-      const isInitialDummy = (list) => {
-        if (!list || list.length === 0) return true;
-        return list.every(
-          (x) => x.date === 'Foto Awal' || !x.url || x.url.includes('drive.google.com') || x.url.startsWith('blob:')
-        );
-      };
-
-      if (category === 'stnk') {
-        const updated = isInitialDummy(stnkList) ? [newEntry] : [...stnkList, newEntry];
-        setStnkList(updated);
-        setStnkIdx(updated.length - 1);
-      } else if (category === 'pajak') {
-        const updated = isInitialDummy(pajakList) ? [newEntry] : [...pajakList, newEntry];
-        setPajakList(updated);
-        setPajakIdx(updated.length - 1);
-      } else if (category === 'kendaraan') {
-        const updated = isInitialDummy(kendaraanList) ? [newEntry] : [...kendaraanList, newEntry];
-        setKendaraanList(updated);
-        setKendaraanIdx(updated.length - 1);
-      }
+      await uploadFileToRustFS(file, folder);
+      // Refresh daftar foto langsung dari RustFS
+      await fetchPhotosFromRustFS();
     } catch (err) {
-      alert(`Gagal mengunggah foto: ${err.message}`);
+      alert(`Gagal mengunggah foto ke RustFS: ${err.message}`);
     } finally {
       setUploading((prev) => ({ ...prev, [category]: false }));
       e.target.value = ''; // reset file input
     }
   };
 
-  // Simpan perubahan lampiran ke Firebase Realtime Database
+  // Simpan / Tutup Lampiran
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Bersihkan previewUrl temporary blob sebelum disimpan permanen ke Firebase
-      const sanitizeList = (list) =>
-        list.map(({ previewUrl, ...rest }) => ({
-          ...rest,
-          url: rest.fileKey ? `/api/storage?key=${encodeURIComponent(rest.fileKey)}` : (rest.publicUrl || rest.url),
-        }));
-
-      const payload = {
-        ...item,
-        FOTO_STNK: JSON.stringify(sanitizeList(stnkList)),
-        FOTO_PAJAK: JSON.stringify(sanitizeList(pajakList)),
-        FOTO_KENDARAAN: JSON.stringify(sanitizeList(kendaraanList)),
-      };
-      await onSave(payload);
+      if (onSave) {
+        await onSave({
+          ...item,
+          FOTO_STNK: null,
+          FOTO_PAJAK: null,
+          FOTO_KENDARAAN: null,
+          LAMPIRAN_UPDATED_AT: new Date().toISOString(),
+        });
+      }
       onClose();
     } catch (err) {
-      alert(`Gagal menyimpan lampiran: ${err.message}`);
+      alert(`Pemberitahuan: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -256,26 +231,30 @@ export default function LampiranKendaraanModal({
           <div className="card-body p-2 d-flex flex-column justify-content-between">
             {/* Top Bar: Date Badge & Zoom Button */}
             <div className="d-flex justify-content-between align-items-center mb-2 px-1">
-              <span className="badge bg-dark bg-opacity-75 text-white fw-normal font-monospace small">
-                🕒 {current?.date || getTodayDateStr()}
-              </span>
               {imgSrc ? (
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm py-0 px-2 small d-flex align-items-center gap-1"
-                  style={{ fontSize: '0.75rem' }}
-                  onClick={() =>
-                    setZoomData({
-                      title,
-                      url: imgSrc,
-                      date: current.date,
-                    })
-                  }
-                >
-                  🔍 Zoom
-                </button>
+                <>
+                  <span className="badge bg-dark bg-opacity-75 text-white fw-normal font-monospace small">
+                    🕒 {current?.date}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm py-0 px-2 small d-flex align-items-center gap-1"
+                    style={{ fontSize: '0.75rem' }}
+                    onClick={() =>
+                      setZoomData({
+                        title,
+                        url: imgSrc,
+                        date: current.date,
+                      })
+                    }
+                  >
+                    🔍 Zoom
+                  </button>
+                </>
               ) : (
-                <span className="badge bg-light text-muted border small">Belum ada foto</span>
+                <div className="w-100 text-center">
+                  <span className="badge bg-light text-muted border small">Belum ada riwayat foto</span>
+                </div>
               )}
             </div>
 
@@ -286,10 +265,15 @@ export default function LampiranKendaraanModal({
               onClick={() => !imgSrc && inputRef.current?.click()}
               title="Klik untuk memilih foto dari laptop atau galeri HP"
             >
-              {isUp ? (
+              {loading ? (
+                <div className="text-center text-secondary">
+                  <div className="spinner-border spinner-border-sm mb-1" role="status" />
+                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Memuat dari RustFS...</div>
+                </div>
+              ) : isUp ? (
                 <div className="text-center text-primary">
                   <div className="spinner-border spinner-border-sm mb-1" role="status" />
-                  <div className="small fw-semibold">Mengunggah ke RustFS...</div>
+                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Mengunggah ke RustFS...</div>
                 </div>
               ) : imgSrc ? (
                 <>
@@ -339,12 +323,12 @@ export default function LampiranKendaraanModal({
                   )}
                 </>
               ) : (
-                <div className="text-center text-muted p-3">
-                  <div style={{ fontSize: '2rem' }}>📷</div>
-                  <small className="d-block mt-1">Belum ada foto tersimpan</small>
-                  <small className="text-primary fw-semibold" style={{ fontSize: '0.72rem' }}>
-                    + Klik untuk unggah
-                  </small>
+                <div className="text-center text-muted p-2">
+                  <div className="fs-3 mb-1">📷</div>
+                  <div className="fw-semibold text-secondary" style={{ fontSize: '0.8rem' }}>Belum ada foto</div>
+                  <div className="text-primary mt-1 fw-bold" style={{ fontSize: '0.72rem' }}>
+                    + Klik untuk unggah baru
+                  </div>
                 </div>
               )}
             </div>
