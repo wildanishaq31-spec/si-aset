@@ -110,6 +110,31 @@ export default function KaryawanPage() {
     });
   }, [data, search]);
 
+  // Statistik Jumlah Kepegawaian (PNS, PPPK, PW, Kontrak/Non-ASN)
+  const statusStats = useMemo(() => {
+    let pns = 0;
+    let pppk = 0;
+    let pw = 0;
+    let kontrak = 0;
+
+    data.forEach((item) => {
+      const s = (item.STATUS || item.status || '').toUpperCase();
+      if (s.includes('PNS')) {
+        pns++;
+      } else if (s.includes('PW')) {
+        pw++;
+      } else if (s.includes('PPPK')) {
+        pppk++;
+      } else if (s.includes('HONOR') || s.includes('KONTRAK') || s.includes('NON ASN')) {
+        kontrak++;
+      } else {
+        kontrak++; // default fallback for other contract/staff
+      }
+    });
+
+    return { pns, pppk, pw, kontrak };
+  }, [data]);
+
   // Export CSV
   const handleExportCSV = () => {
     if (filtered.length === 0) {
@@ -230,12 +255,31 @@ export default function KaryawanPage() {
       <div className="card card-custom p-4 bg-white mb-4 shadow-sm">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
           <div>
-            <h5 className="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <h5 className="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
               <span>👥</span> Database Karyawan (Master Data)
             </h5>
-            <small className="text-muted">
-              Total terdaftar: <strong>{data.length}</strong> karyawan {search && <span>(ditemukan: <strong>{filtered.length}</strong>)</span>}
-            </small>
+            <div className="d-flex align-items-center flex-wrap gap-2 mt-2">
+              <span className="badge bg-dark text-white px-2 py-1 rounded-pill small">
+                👥 Total: <strong>{data.length}</strong>
+              </span>
+              <span className="badge bg-success text-white px-2 py-1 rounded-pill small">
+                🏛️ PNS: <strong>{statusStats.pns}</strong>
+              </span>
+              <span className="badge bg-primary text-white px-2 py-1 rounded-pill small">
+                💼 PPPK: <strong>{statusStats.pppk}</strong>
+              </span>
+              <span className="badge bg-info text-dark px-2 py-1 rounded-pill small">
+                🌟 PPPK PW: <strong>{statusStats.pw}</strong>
+              </span>
+              <span className="badge bg-warning text-dark px-2 py-1 rounded-pill small">
+                📝 Kontrak / Lainnya: <strong>{statusStats.kontrak}</strong>
+              </span>
+              {search && (
+                <span className="badge bg-light text-dark border px-2 py-1 rounded-pill small">
+                  🔍 Ditemukan: <strong>{filtered.length}</strong>
+                </span>
+              )}
+            </div>
           </div>
           <div className="d-flex gap-2 flex-wrap">
             <button
