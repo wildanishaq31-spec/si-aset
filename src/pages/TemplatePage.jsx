@@ -157,6 +157,7 @@ export default function TemplatePage() {
   // Modal Upload Master
   const [uploadModalItem, setUploadModalItem] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
 
   // Modal Tambah Template Baru
@@ -164,12 +165,15 @@ export default function TemplatePage() {
   const [createForm, setCreateForm] = useState({
     nama_template: '',
     jenis_aset: 'Kendaraan',
+    custom_jenis_aset: '',
     jenis_template: 'Berita Acara',
+    custom_jenis_template: '',
     tipe_file: 'DOCX',
     description: '',
   });
   const [createFile, setCreateFile] = useState(null);
   const [creating, setCreating] = useState(false);
+  const [createProgress, setCreateProgress] = useState(0);
 
   // Ambil daftar file template master langsung dari Storage (Background Silent Sync)
   const fetchTemplatesFromRustFS = async (showBlockLoading = false) => {
@@ -247,15 +251,18 @@ export default function TemplatePage() {
     });
   }, [templateList, search, filterAset, filterTipe]);
 
-  // Handle Upload File Master ke Storage
+  // Handle Upload File Master ke Storage (dengan progress 1-100%)
   const handleUploadFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !uploadModalItem) return;
 
     setUploading(true);
+    setUploadProgress(1);
     try {
-      // Simpan langsung ke folder TEMPLATE di Storage
-      const { fileKey } = await uploadFileToRustFS(file, 'TEMPLATE');
+      // Simpan langsung ke folder TEMPLATE di Storage dengan callback progress
+      const { fileKey } = await uploadFileToRustFS(file, 'TEMPLATE', (p) => {
+        setUploadProgress(p);
+      });
 
       // Update state & cache seketika (Optimistic UI Update 0ms)
       const newEntry = {
@@ -281,11 +288,12 @@ export default function TemplatePage() {
       notify.error(`Gagal mengunggah file template ke Storage: ${err.message}`, 'Upload Gagal');
     } finally {
       setUploading(false);
+      setUploadProgress(0);
       e.target.value = '';
     }
   };
 
-  // Handle Create Template Baru
+  // Handle Create Template Baru (dengan progress 1-100%)
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
     if (!createForm.nama_template.trim()) {
@@ -294,12 +302,15 @@ export default function TemplatePage() {
     }
 
     setCreating(true);
+    setCreateProgress(1);
     try {
       let uploadedFileName = null;
       let uploadedFileKey = null;
 
       if (createFile) {
-        const { fileKey } = await uploadFileToRustFS(createFile, 'TEMPLATE');
+        const { fileKey } = await uploadFileToRustFS(createFile, 'TEMPLATE', (p) => {
+          setCreateProgress(p);
+        });
         uploadedFileName = createFile.name;
         uploadedFileKey = fileKey;
 
@@ -755,16 +766,35 @@ export default function TemplatePage() {
                   </code>
                 </p>
 
-                {/* Upload Trigger Area */}
+                {/* Upload Trigger & Progress Area */}
                 <div
-                  className="border-2 border-dashed rounded-4 p-4 text-center bg-light bg-opacity-50 transition cursor-pointer hover-border-primary"
-                  style={{ borderStyle: 'dashed', borderColor: '#cbd5e1', cursor: 'pointer' }}
+                  className={`border-2 border-dashed rounded-4 p-4 text-center ${
+                    uploading ? 'bg-primary bg-opacity-10 border-primary' : 'bg-light bg-opacity-50 transition cursor-pointer hover-border-primary'
+                  }`}
+                  style={{ borderStyle: 'dashed', borderColor: uploading ? '#3b82f6' : '#cbd5e1', cursor: uploading ? 'default' : 'pointer' }}
                   onClick={() => !uploading && fileInputRef.current?.click()}
                 >
                   {uploading ? (
-                    <div className="py-3 text-primary">
-                      <div className="spinner-border spinner-border-sm mb-2" role="status" />
-                      <div className="fw-semibold small">Mengunggah ke Storage...</div>
+                    <div className="py-2 px-2 text-center">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="fw-bold small text-primary d-flex align-items-center gap-2">
+                          <span className="spinner-border spinner-border-sm text-primary" role="status" />
+                          Mengunggah ke Storage...
+                        </span>
+                        <span className="badge bg-primary fs-6 px-3 py-1 font-monospace rounded-pill shadow-sm">
+                          {uploadProgress}%
+                        </span>
+                      </div>
+                      <div className="progress rounded-pill shadow-sm" style={{ height: '12px', background: '#e2e8f0' }}>
+                        <div
+                          className="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                          role="progressbar"
+                          style={{ width: `${uploadProgress}%`, transition: 'width 0.2s ease-in-out' }}
+                        />
+                      </div>
+                      <small className="text-muted mt-2 d-block" style={{ fontSize: '0.75rem' }}>
+                        Mohon tunggu, berkas master sedang dikirim dan diproses ke server Storage...
+                      </small>
                     </div>
                   ) : (
                     <div className="py-2">

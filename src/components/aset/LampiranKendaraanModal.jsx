@@ -101,8 +101,8 @@ export default function LampiranKendaraanModal({
   const [stnkIdx, setStnkIdx] = useState(0);
   const [pajakIdx, setPajakIdx] = useState(0);
   const [kendaraanIdx, setKendaraanIdx] = useState(0);
-
   const [uploading, setUploading] = useState({ stnk: false, pajak: false, kendaraan: false });
+  const [uploadProgress, setUploadProgress] = useState({ stnk: 0, pajak: 0, kendaraan: 0 });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [zoomData, setZoomData] = useState(null);
@@ -181,9 +181,12 @@ export default function LampiranKendaraanModal({
     const folder = `KENDARAAN/${cleanTag}/LAMPIRAN FOTO/${subFolder}`;
 
     setUploading((prev) => ({ ...prev, [category]: true }));
+    setUploadProgress((prev) => ({ ...prev, [category]: 1 }));
 
     try {
-      await uploadFileToRustFS(file, folder);
+      await uploadFileToRustFS(file, folder, (p) => {
+        setUploadProgress((prev) => ({ ...prev, [category]: p }));
+      });
       notify.success(
         `Foto ${category === 'stnk' ? 'STNK' : category === 'pajak' ? 'Pajak' : 'Kendaraan'} berhasil diunggah ke Storage!`,
         'Upload Berhasil'
@@ -194,6 +197,7 @@ export default function LampiranKendaraanModal({
       notify.error(`Gagal mengunggah foto ke Storage: ${err.message}`, 'Upload Gagal');
     } finally {
       setUploading((prev) => ({ ...prev, [category]: false }));
+      setUploadProgress((prev) => ({ ...prev, [category]: 0 }));
       e.target.value = ''; // reset file input
     }
   };
@@ -277,9 +281,26 @@ export default function LampiranKendaraanModal({
                   <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Memuat dari Storage...</div>
                 </div>
               ) : isUp ? (
-                <div className="text-center text-primary">
-                  <div className="spinner-border spinner-border-sm mb-1" role="status" />
-                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Mengunggah ke Storage...</div>
+                <div className="text-center text-primary px-3 w-100">
+                  <div className="d-flex justify-content-between align-items-center mb-1">
+                    <span className="small fw-bold text-primary d-flex align-items-center gap-1" style={{ fontSize: '0.72rem' }}>
+                      <span className="spinner-border spinner-border-sm text-primary" style={{ width: '0.8rem', height: '0.8rem' }} role="status" />
+                      Mengunggah...
+                    </span>
+                    <span className="badge bg-primary font-monospace rounded-pill" style={{ fontSize: '0.7rem' }}>
+                      {uploadProgress[category] || 1}%
+                    </span>
+                  </div>
+                  <div className="progress rounded-pill shadow-sm" style={{ height: '8px', background: '#e2e8f0' }}>
+                    <div
+                      className="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                      role="progressbar"
+                      style={{ width: `${uploadProgress[category] || 1}%`, transition: 'width 0.2s ease-in-out' }}
+                    />
+                  </div>
+                  <small className="text-muted mt-1 d-block" style={{ fontSize: '0.68rem' }}>
+                    Menyimpan ke Storage...
+                  </small>
                 </div>
               ) : imgSrc ? (
                 <>
