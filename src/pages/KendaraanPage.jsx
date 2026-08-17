@@ -165,7 +165,7 @@ export default function KendaraanPage() {
   const handleSaveLampiran = async (updatedData) => {
     try {
       await save(updatedData);
-      notify.success('Lampiran foto kendaraan berhasil diperbarui di RustFS!', 'Lampiran Disimpan');
+      notify.success('Lampiran foto kendaraan berhasil diperbarui di Storage!', 'Lampiran Disimpan');
     } catch (err) {
       notify.error(`Gagal menyimpan lampiran: ${err.message}`, 'Simpan Gagal');
     }

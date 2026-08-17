@@ -185,13 +185,13 @@ export default function LampiranKendaraanModal({
     try {
       await uploadFileToRustFS(file, folder);
       notify.success(
-        `Foto ${category === 'stnk' ? 'STNK' : category === 'pajak' ? 'Pajak' : 'Kendaraan'} berhasil diunggah ke RustFS!`,
+        `Foto ${category === 'stnk' ? 'STNK' : category === 'pajak' ? 'Pajak' : 'Kendaraan'} berhasil diunggah ke Storage!`,
         'Upload Berhasil'
       );
-      // Refresh daftar foto langsung dari RustFS
+      // Refresh daftar foto langsung dari Storage
       await fetchPhotosFromRustFS();
     } catch (err) {
-      notify.error(`Gagal mengunggah foto ke RustFS: ${err.message}`, 'Upload Gagal');
+      notify.error(`Gagal mengunggah foto ke Storage: ${err.message}`, 'Upload Gagal');
     } finally {
       setUploading((prev) => ({ ...prev, [category]: false }));
       e.target.value = ''; // reset file input
@@ -211,7 +211,7 @@ export default function LampiranKendaraanModal({
           LAMPIRAN_UPDATED_AT: new Date().toISOString(),
         });
       }
-      notify.success('Riwayat lampiran foto tersimpan di RustFS!', 'Lampiran Selesai');
+      notify.success('Riwayat lampiran foto tersimpan di Storage!', 'Lampiran Selesai');
       onClose();
     } catch (err) {
       notify.error(`Terjadi kesalahan: ${err.message}`, 'Gagal Menyimpan');
@@ -274,12 +274,12 @@ export default function LampiranKendaraanModal({
               {loading ? (
                 <div className="text-center text-secondary">
                   <div className="spinner-border spinner-border-sm mb-1" role="status" />
-                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Memuat dari RustFS...</div>
+                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Memuat dari Storage...</div>
                 </div>
               ) : isUp ? (
                 <div className="text-center text-primary">
                   <div className="spinner-border spinner-border-sm mb-1" role="status" />
-                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Mengunggah ke RustFS...</div>
+                  <div className="small fw-semibold" style={{ fontSize: '0.75rem' }}>Mengunggah ke Storage...</div>
                 </div>
               ) : imgSrc ? (
                 <>
@@ -445,7 +445,7 @@ export default function LampiranKendaraanModal({
                 {saving ? (
                   <>
                     <span className="spinner-border spinner-border-sm" role="status" />
-                    <span>Menyimpan ke RustFS...</span>
+                    <span>Menyimpan ke Storage...</span>
                   </>
                 ) : (
                   <>

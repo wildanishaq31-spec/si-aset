@@ -210,23 +210,23 @@ export default function TemplatePage() {
     });
   }, [templateList, search, filterAset, filterTipe]);
 
-  // Handle Upload File Master ke RustFS
+  // Handle Upload File Master ke Storage
   const handleUploadFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file || !uploadModalItem) return;
 
     setUploading(true);
     try {
-      // Simpan langsung ke folder TEMPLATE di RustFS
+      // Simpan langsung ke folder TEMPLATE di Storage
       await uploadFileToRustFS(file, 'TEMPLATE');
       notify.success(
-        `Master file ${file.name} berhasil diunggah ke RustFS untuk template ${uploadModalItem.nama_template}!`,
+        `Master file ${file.name} berhasil diunggah ke Storage untuk template ${uploadModalItem.nama_template}!`,
         'Upload Master Berhasil'
       );
       setUploadModalItem(null);
       await fetchTemplatesFromRustFS();
     } catch (err) {
-      notify.error(`Gagal mengunggah file template ke RustFS: ${err.message}`, 'Upload Gagal');
+      notify.error(`Gagal mengunggah file template ke Storage: ${err.message}`, 'Upload Gagal');
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -237,7 +237,7 @@ export default function TemplatePage() {
   const handleDownload = (tmpl) => {
     if (!tmpl.isUploaded) {
       notify.warning(
-        `File master untuk ${tmpl.nama_template} belum diunggah ke RustFS. Silakan klik tombol Upload terlebih dahulu.`,
+        `File master untuk ${tmpl.nama_template} belum diunggah ke Storage. Silakan klik tombol Upload terlebih dahulu.`,
         'File Belum Ada'
       );
       return;
@@ -251,16 +251,16 @@ export default function TemplatePage() {
     document.body.removeChild(link);
   };
 
-  // Handle Delete Master File dari RustFS
+  // Handle Delete Master File dari Storage
   const handleDelete = async (tmpl) => {
     if (!tmpl.isUploaded) {
-      notify.info('File ini belum ada di RustFS.', 'Informasi');
+      notify.info('File ini belum ada di Storage.', 'Informasi');
       return;
     }
 
     const confirmed = await notify.confirm({
       title: 'Hapus Master Template?',
-      text: `File master ${tmpl.fileName} akan dihapus dari server RustFS.`,
+      text: `File master ${tmpl.fileName} akan dihapus dari Storage.`,
       confirmButtonText: 'Ya, Hapus File',
       cancelButtonText: 'Batal',
     });
@@ -277,7 +277,7 @@ export default function TemplatePage() {
         });
         const data = await res.json();
         if (data.success) {
-          notify.success(`File master ${tmpl.fileName} berhasil dihapus dari RustFS.`, 'File Dihapus');
+          notify.success(`File master ${tmpl.fileName} berhasil dihapus dari Storage.`, 'File Dihapus');
           await fetchTemplatesFromRustFS();
         } else {
           throw new Error(data.error || 'Gagal menghapus file');
@@ -297,7 +297,7 @@ export default function TemplatePage() {
             <span>📝</span> Template Dokumen
           </h4>
           <p className="text-secondary mb-0 small">
-            Kelola master template Word (.docx) dan Excel (.xlsx) langsung di RustFS Storage
+            Kelola master template Word (.docx) dan Excel (.xlsx) langsung di Storage
           </p>
         </div>
 
@@ -309,7 +309,7 @@ export default function TemplatePage() {
             disabled={loading}
           >
             <i className={`bi bi-arrow-clockwise ${loading ? 'spin' : ''}`}></i>
-            <span>Refresh RustFS</span>
+            <span>Refresh Storage</span>
           </button>
         </div>
       </div>
@@ -387,7 +387,7 @@ export default function TemplatePage() {
               <tr className="text-uppercase fw-bold" style={{ fontSize: '0.74rem', letterSpacing: '0.5px' }}>
                 <th className="py-3 px-4" style={{ minWidth: '260px' }}>Judul Dokumen</th>
                 <th className="py-3 px-3 text-center" style={{ width: '170px' }}>Tipe File</th>
-                <th className="py-3 px-3 text-center" style={{ width: '220px' }}>Status Tag / RustFS</th>
+                <th className="py-3 px-3 text-center" style={{ width: '220px' }}>Status Tag</th>
                 <th className="py-3 px-4 text-center" style={{ width: '150px' }}>Aksi</th>
               </tr>
             </thead>
@@ -395,7 +395,7 @@ export default function TemplatePage() {
               {loading ? (
                 <tr>
                   <td colSpan="4" className="py-5 text-center">
-                    <LoadingSpinner text="Memeriksa berkas master di RustFS Storage..." />
+                    <LoadingSpinner text="Memeriksa berkas master di Storage..." />
                   </td>
                 </tr>
               ) : filteredTemplates.length === 0 ? (
@@ -448,7 +448,7 @@ export default function TemplatePage() {
                         )}
                       </td>
 
-                      {/* 3. Status Tag & Ketersediaan di RustFS */}
+                      {/* 3. Status Tag & Ketersediaan di Storage */}
                       <td className="py-3 px-3 text-center">
                         {tmpl.isUploaded ? (
                           <div>
@@ -460,7 +460,7 @@ export default function TemplatePage() {
                               {tmpl.tag_count ? `${tmpl.tag_count} Tag Terbaca` : 'Excel Template'}
                             </span>
                             <div className="text-muted font-monospace" style={{ fontSize: '0.7rem' }}>
-                              {formatBytes(tmpl.fileSize)} • Tersimpan di RustFS
+                              {formatBytes(tmpl.fileSize)} • Tersimpan di Storage
                             </div>
                           </div>
                         ) : (
@@ -492,7 +492,7 @@ export default function TemplatePage() {
                             <i className="bi bi-pencil-fill" style={{ fontSize: '0.85rem' }}></i>
                           </button>
 
-                          {/* Tombol Download File Master dari RustFS */}
+                          {/* Tombol Download File Master dari Storage */}
                           <button
                             type="button"
                             className={`btn btn-sm rounded-3 p-1 px-2 d-flex align-items-center justify-content-center shadow-sm ${
@@ -507,7 +507,7 @@ export default function TemplatePage() {
                             <i className="bi bi-cloud-arrow-down-fill" style={{ fontSize: '0.95rem' }}></i>
                           </button>
 
-                          {/* Tombol Hapus File dari RustFS */}
+                          {/* Tombol Hapus File dari Storage */}
                           <button
                             type="button"
                             className={`btn btn-sm rounded-3 p-1 px-2 d-flex align-items-center justify-content-center shadow-sm ${
@@ -570,9 +570,9 @@ export default function TemplatePage() {
                 </div>
 
                 <p className="text-secondary small mb-3">
-                  Pilih file master dokumen dari laptop Anda. File akan otomatis disimpan ke RustFS Storage pada folder:
+                  Pilih file master dokumen dari laptop Anda. File akan otomatis disimpan ke Storage pada folder:
                   <code className="d-block mt-1 bg-light p-2 rounded border text-dark font-monospace">
-                    si-aset/TEMPLATE/{uploadModalItem.file_target}
+                    TEMPLATE/{uploadModalItem.file_target}
                   </code>
                 </p>
 
@@ -585,7 +585,7 @@ export default function TemplatePage() {
                   {uploading ? (
                     <div className="py-3 text-primary">
                       <div className="spinner-border spinner-border-sm mb-2" role="status" />
-                      <div className="fw-semibold small">Mengunggah ke RustFS Storage...</div>
+                      <div className="fw-semibold small">Mengunggah ke Storage...</div>
                     </div>
                   ) : (
                     <div className="py-2">
