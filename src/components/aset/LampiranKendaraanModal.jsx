@@ -64,6 +64,8 @@ export default function LampiranKendaraanModal({
   const [uploading, setUploading] = useState({ stnk: false, pajak: false, kendaraan: false });
   const [saving, setSaving] = useState(false);
   const [zoomData, setZoomData] = useState(null);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomRotation, setZoomRotation] = useState(0);
 
   const stnkInputRef = useRef(null);
   const pajakInputRef = useRef(null);
@@ -390,48 +392,135 @@ export default function LampiranKendaraanModal({
         </div>
       </div>
 
-      {/* Lightbox / Zoom Preview Modal */}
+      {/* Lightbox / Enhanced Zoom Preview Modal with Zoom In, Zoom Out & Rotation */}
       {zoomData && (
         <div
           className="modal fade show d-block"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 1065 }}
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.9)', zIndex: 1065 }}
           tabIndex="-1"
-          onClick={() => setZoomData(null)}
+          onClick={() => {
+            setZoomData(null);
+            setZoomScale(1);
+            setZoomRotation(0);
+          }}
         >
           <div
-            className="modal-dialog modal-dialog-centered modal-lg"
+            className="modal-dialog modal-dialog-centered modal-xl"
+            style={{ maxWidth: '92vw' }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-content bg-transparent border-0 text-white">
-              <div className="d-flex justify-content-between align-items-center pb-2 px-2">
-                <h6 className="mb-0 fw-bold">
-                  {zoomData.title} <span className="small opacity-75 font-monospace">({zoomData.date})</span>
-                </h6>
-                <div className="d-flex gap-2">
+              {/* Header with Title & Zoom Controls Toolbar */}
+              <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-3 px-2 border-bottom border-secondary border-opacity-50">
+                <div className="d-flex align-items-center gap-2">
+                  <h6 className="mb-0 fw-bold fs-6">
+                    {zoomData.title}
+                  </h6>
+                  <span className="badge bg-secondary bg-opacity-75 text-white font-monospace small">
+                    🕒 {zoomData.date}
+                  </span>
+                </div>
+
+                {/* Toolbar: Zoom In, Zoom Out, Rotate, Reset, Close */}
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <div className="btn-group btn-group-sm bg-dark rounded shadow border border-secondary" role="group">
+                    <button
+                      type="button"
+                      className="btn btn-outline-light px-2 d-flex align-items-center gap-1"
+                      onClick={() => setZoomScale((prev) => Math.max(0.5, Number((prev - 0.25).toFixed(2))))}
+                      disabled={zoomScale <= 0.5}
+                      title="Perkecil Gambar (Zoom Out)"
+                    >
+                      <span>➖</span> Zoom Out
+                    </button>
+                    <span className="btn btn-dark disabled text-white fw-bold px-2 font-monospace" style={{ minWidth: '60px' }}>
+                      {Math.round(zoomScale * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-outline-light px-2 d-flex align-items-center gap-1"
+                      onClick={() => setZoomScale((prev) => Math.min(3.5, Number((prev + 0.25).toFixed(2))))}
+                      disabled={zoomScale >= 3.5}
+                      title="Perbesar Gambar (Zoom In)"
+                    >
+                      <span>➕</span> Zoom In
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-light d-flex align-items-center gap-1 shadow-sm px-2"
+                    onClick={() => setZoomRotation((prev) => (prev + 90) % 360)}
+                    title="Putar Gambar 90 Derajat"
+                  >
+                    <span>🔄</span> Putar
+                  </button>
+
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary text-white d-flex align-items-center gap-1 shadow-sm px-2"
+                    onClick={() => {
+                      setZoomScale(1);
+                      setZoomRotation(0);
+                    }}
+                    title="Kembalikan ke Ukuran Semula"
+                  >
+                    <span>↺</span> Reset
+                  </button>
+
                   <a
                     href={zoomData.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-sm btn-outline-light py-0 px-2"
+                    className="btn btn-sm btn-info text-white d-flex align-items-center gap-1 shadow-sm px-3"
+                    title="Buka Gambar Asli di Tab Baru"
                   >
-                    Buka Tab Baru ↗
+                    <span>↗</span> Buka Tab Baru
                   </a>
+
                   <button
                     type="button"
-                    className="btn btn-sm btn-light py-0 px-2"
-                    onClick={() => setZoomData(null)}
+                    className="btn btn-sm btn-danger px-3 shadow-sm fw-bold"
+                    onClick={() => {
+                      setZoomData(null);
+                      setZoomScale(1);
+                      setZoomRotation(0);
+                    }}
                   >
                     ✕ Tutup
                   </button>
                 </div>
               </div>
-              <div className="modal-body text-center p-2">
-                <img
-                  src={zoomData.url}
-                  alt={zoomData.title}
-                  className="img-fluid rounded shadow-lg"
-                  style={{ maxHeight: '80vh', objectFit: 'contain' }}
-                />
+
+              {/* Zoom Image Area */}
+              <div
+                className="modal-body text-center p-3 d-flex align-items-center justify-content-center overflow-auto"
+                style={{
+                  minHeight: '65vh',
+                  maxHeight: '80vh',
+                  cursor: zoomScale > 1 ? 'grab' : 'default',
+                }}
+              >
+                <div
+                  style={{
+                    transform: `scale(${zoomScale}) rotate(${zoomRotation}deg)`,
+                    transformOrigin: 'center center',
+                    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                    display: 'inline-block',
+                  }}
+                >
+                  <img
+                    src={zoomData.url}
+                    alt={zoomData.title}
+                    className="img-fluid rounded shadow-lg border border-secondary border-opacity-50"
+                    style={{
+                      maxHeight: '75vh',
+                      maxWidth: '85vw',
+                      objectFit: 'contain',
+                      pointerEvents: 'auto',
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
