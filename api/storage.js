@@ -71,12 +71,24 @@ export default async function handler(req, res) {
       });
 
       await s3.send(command);
-      const publicUrl = `${endpoint}/${bucket}/${key}`;
+
+      const encodedKey = key.split('/').map(encodeURIComponent).join('/');
+      const publicUrl = `${endpoint}/${bucket}/${encodedKey}`;
+
+      // Buat presigned GET URL (berlaku 7 hari) sebagai opsi jika bucket private
+      let downloadUrl = publicUrl;
+      try {
+        const getCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
+        downloadUrl = await getSignedUrl(s3, getCmd, { expiresIn: 604800 });
+      } catch (e) {
+        // fallback to publicUrl
+      }
 
       return res.status(200).json({
         success: true,
         fileKey: key,
         publicUrl,
+        downloadUrl,
       });
     }
 

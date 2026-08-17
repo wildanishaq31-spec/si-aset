@@ -99,24 +99,38 @@ export default function LampiranKendaraanModal({
 
     setUploading((prev) => ({ ...prev, [category]: true }));
 
+    // Buat URL preview lokal langsung agar foto langsung tampil seketika
+    const localBlobUrl = URL.createObjectURL(file);
+
     try {
-      const { publicUrl } = await uploadFileToRustFS(file, folder);
+      const { publicUrl, downloadUrl } = await uploadFileToRustFS(file, folder);
       const newEntry = {
-        url: publicUrl,
+        url: downloadUrl || publicUrl,
+        publicUrl: publicUrl,
+        downloadUrl: downloadUrl,
+        previewUrl: localBlobUrl,
         date: getTodayDateStr(),
         fileName: file.name,
       };
 
+      // Cek apakah data sebelumnya hanya berisi dummy "Foto Awal" / link lama
+      const isInitialDummy = (list) => {
+        if (!list || list.length === 0) return true;
+        return list.every(
+          (x) => x.date === 'Foto Awal' || !x.url || x.url.includes('drive.google.com')
+        );
+      };
+
       if (category === 'stnk') {
-        const updated = [...stnkList, newEntry];
+        const updated = isInitialDummy(stnkList) ? [newEntry] : [...stnkList, newEntry];
         setStnkList(updated);
         setStnkIdx(updated.length - 1);
       } else if (category === 'pajak') {
-        const updated = [...pajakList, newEntry];
+        const updated = isInitialDummy(pajakList) ? [newEntry] : [...pajakList, newEntry];
         setPajakList(updated);
         setPajakIdx(updated.length - 1);
       } else if (category === 'kendaraan') {
-        const updated = [...kendaraanList, newEntry];
+        const updated = isInitialDummy(kendaraanList) ? [newEntry] : [...kendaraanList, newEntry];
         setKendaraanList(updated);
         setKendaraanIdx(updated.length - 1);
       }
@@ -152,6 +166,7 @@ export default function LampiranKendaraanModal({
     const current = list[activeIdx] || null;
     const hasMultiple = list.length > 1;
     const isUp = uploading[category];
+    const imgSrc = current?.previewUrl || current?.downloadUrl || current?.url || null;
 
     return (
       <div className="col-md-4">
@@ -166,7 +181,7 @@ export default function LampiranKendaraanModal({
               <span className="badge bg-dark bg-opacity-75 text-white fw-normal font-monospace small">
                 🕒 {current?.date || getTodayDateStr()}
               </span>
-              {current?.url ? (
+              {imgSrc ? (
                 <button
                   type="button"
                   className="btn btn-primary btn-sm py-0 px-2 small d-flex align-items-center gap-1"
@@ -174,7 +189,7 @@ export default function LampiranKendaraanModal({
                   onClick={() =>
                     setZoomData({
                       title,
-                      url: current.url,
+                      url: imgSrc,
                       date: current.date,
                     })
                   }
@@ -190,7 +205,7 @@ export default function LampiranKendaraanModal({
             <div
               className="position-relative d-flex align-items-center justify-content-center bg-light rounded border overflow-hidden"
               style={{ height: '170px', cursor: 'pointer' }}
-              onClick={() => !current?.url && inputRef.current?.click()}
+              onClick={() => !imgSrc && inputRef.current?.click()}
               title="Klik untuk memilih foto dari laptop atau galeri HP"
             >
               {isUp ? (
@@ -198,10 +213,10 @@ export default function LampiranKendaraanModal({
                   <div className="spinner-border spinner-border-sm mb-1" role="status" />
                   <div className="small fw-semibold">Mengunggah ke RustFS...</div>
                 </div>
-              ) : current?.url ? (
+              ) : imgSrc ? (
                 <>
                   <img
-                    src={current.url}
+                    src={imgSrc}
                     alt={title}
                     className="w-100 h-100 object-fit-contain"
                     onError={(e) => {
