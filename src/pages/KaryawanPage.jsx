@@ -48,7 +48,18 @@ export default function KaryawanPage() {
     setLoading(true);
     try {
       const res = await getKaryawanData();
-      setData(res);
+      const seen = new Set();
+      const uniqueRes = [];
+      (res || []).forEach((item) => {
+        const cleanNama = (item.NAMA || item.nama || '').trim().toLowerCase();
+        const cleanNip = (item.NIP || item.nip || '').trim().replace(/\s+/g, '');
+        const key = cleanNip ? `${cleanNama}__${cleanNip}` : cleanNama;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          uniqueRes.push(item);
+        }
+      });
+      setData(uniqueRes);
     } catch (err) {
       console.error(err);
     } finally {
@@ -223,8 +234,7 @@ export default function KaryawanPage() {
               <span>👥</span> Database Karyawan (Master Data)
             </h5>
             <small className="text-muted">
-              Total terdaftar: <strong>{data.length}</strong> karyawan | Ditampilkan:{' '}
-              <strong>{filtered.length}</strong> data
+              Total terdaftar: <strong>{data.length}</strong> karyawan {search && <span>(ditemukan: <strong>{filtered.length}</strong>)</span>}
             </small>
           </div>
           <div className="d-flex gap-2 flex-wrap">
