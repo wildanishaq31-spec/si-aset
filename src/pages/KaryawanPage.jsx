@@ -110,29 +110,37 @@ export default function KaryawanPage() {
     });
   }, [data, search]);
 
-  // Statistik Jumlah Kepegawaian (PNS, PPPK, PW, Kontrak/Non-ASN)
+  // Statistik Jumlah Kepegawaian (Valid 100% sesuai nilai kolom STATUS)
   const statusStats = useMemo(() => {
     let pns = 0;
     let pppk = 0;
     let pw = 0;
     let kontrak = 0;
+    let lainnya = 0;
 
     data.forEach((item) => {
-      const s = (item.STATUS || item.status || '').toUpperCase();
-      if (s.includes('PNS')) {
-        pns++;
-      } else if (s.includes('PW')) {
+      const s = (item.STATUS || item.status || 'PPPK').trim().toUpperCase();
+
+      if (s.includes('PW')) {
         pw++;
+      } else if (s.includes('PNS')) {
+        pns++;
       } else if (s.includes('PPPK')) {
         pppk++;
-      } else if (s.includes('HONOR') || s.includes('KONTRAK') || s.includes('NON ASN')) {
+      } else if (
+        s.includes('HONOR') ||
+        s.includes('KONTRAK') ||
+        s.includes('NON ASN') ||
+        s.includes('PTT') ||
+        s.includes('THL')
+      ) {
         kontrak++;
       } else {
-        kontrak++; // default fallback for other contract/staff
+        lainnya++;
       }
     });
 
-    return { pns, pppk, pw, kontrak };
+    return { pns, pppk, pw, kontrak, lainnya };
   }, [data]);
 
   // Export CSV
@@ -221,13 +229,19 @@ export default function KaryawanPage() {
       key: 'STATUS',
       label: 'Status',
       render: (val, item) => {
-        const s = val || item.status || 'PPPK';
+        const s = (val || item.status || 'PPPK').trim();
+        const upper = s.toUpperCase();
         let badgeClass = 'bg-primary';
-        if (s.includes('PNS')) badgeClass = 'bg-success';
-        if (s.includes('PW')) badgeClass = 'bg-info text-dark';
-        if (s.includes('Honor') || s.includes('Kontrak')) badgeClass = 'bg-warning text-dark';
+        if (upper.includes('PW')) badgeClass = 'bg-info text-dark';
+        else if (upper.includes('PNS')) badgeClass = 'bg-success';
+        else if (
+          upper.includes('HONOR') ||
+          upper.includes('KONTRAK') ||
+          upper.includes('NON ASN')
+        )
+          badgeClass = 'bg-warning text-dark';
 
-        return <span className={`badge ${badgeClass}`}>{s}</span>;
+        return <span className={`badge ${badgeClass} px-2 py-1`}>{s}</span>;
       },
     },
     {
@@ -271,9 +285,16 @@ export default function KaryawanPage() {
               <span className="badge bg-info text-dark px-2 py-1 rounded-pill small">
                 🌟 PPPK PW: <strong>{statusStats.pw}</strong>
               </span>
-              <span className="badge bg-warning text-dark px-2 py-1 rounded-pill small">
-                📝 Kontrak / Lainnya: <strong>{statusStats.kontrak}</strong>
-              </span>
+              {statusStats.kontrak > 0 && (
+                <span className="badge bg-warning text-dark px-2 py-1 rounded-pill small">
+                  📝 Kontrak / Non ASN: <strong>{statusStats.kontrak}</strong>
+                </span>
+              )}
+              {statusStats.lainnya > 0 && (
+                <span className="badge bg-secondary text-white px-2 py-1 rounded-pill small">
+                  📋 Lainnya: <strong>{statusStats.lainnya}</strong>
+                </span>
+              )}
               {search && (
                 <span className="badge bg-light text-dark border px-2 py-1 rounded-pill small">
                   🔍 Ditemukan: <strong>{filtered.length}</strong>
