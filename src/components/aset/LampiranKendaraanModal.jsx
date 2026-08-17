@@ -6,34 +6,56 @@ import React, { useState, useEffect, useRef } from 'react';
 import { uploadFileToRustFS } from '../../services/storageService';
 
 /**
+ * Helper untuk memastikan URL foto dapat dimuat langsung oleh browser via Serverless Proxy
+ */
+function getValidImageSrc(url) {
+  if (!url) return null;
+  if (url.startsWith('blob:') || url.startsWith('data:')) return url;
+  if (url.includes('/si-aset/')) {
+    const key = decodeURIComponent(url.split('/si-aset/')[1]);
+    return `/api/storage?key=${encodeURIComponent(key)}`;
+  }
+  return url;
+}
+
+/**
  * Helper untuk mem-parsing data foto dari Firebase/CSV ke format array [{ url, date }]
  */
 function parsePhotoList(raw) {
   if (!raw) return [];
+  let parsed = [];
+
   if (Array.isArray(raw)) {
-    return raw.map((item) => {
-      if (typeof item === 'string') return { url: item, date: 'Foto Awal' };
-      return item;
-    });
-  }
-  if (typeof raw === 'string') {
+    parsed = raw;
+  } else if (typeof raw === 'string') {
     const trimmed = raw.trim();
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
       try {
-        // Handle double-escaped JSON strings if any
         const cleaned = trimmed.replace(/\\"/g, '"');
-        const parsed = JSON.parse(cleaned);
-        if (Array.isArray(parsed)) return parsed;
-        if (parsed.url) return [parsed];
+        const p = JSON.parse(cleaned);
+        parsed = Array.isArray(p) ? p : [p];
       } catch (e) {
         // fallback
       }
-    }
-    if (trimmed.startsWith('http')) {
-      return [{ url: trimmed, date: 'Foto Awal' }];
+    } else if (trimmed.startsWith('http') || trimmed.startsWith('/api/storage')) {
+      parsed = [{ url: trimmed, date: 'Foto Awal' }];
     }
   }
-  return [];
+
+  return parsed.map((item) => {
+    if (typeof item === 'string') {
+      const src = getValidImageSrc(item);
+      return { url: src, originalUrl: item, date: 'Foto Awal' };
+    }
+    const rawUrl = item.url || item.publicUrl || item.downloadUrl || '';
+    const src = getValidImageSrc(rawUrl);
+    return {
+      ...item,
+      url: src || rawUrl,
+      originalUrl: rawUrl,
+      date: item.date || 'Tersimpan',
+    };
+  });
 }
 
 /**

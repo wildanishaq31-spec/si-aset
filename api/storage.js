@@ -43,11 +43,35 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed. Use POST.' });
+  // ------------------------------------------------------------
+  // STREAMING VIEW PROXY (GET request - Pasti Bisa Diakses Browser Mana Pun Tanpa CORS)
+  // ------------------------------------------------------------
+  if (req.method === 'GET') {
+    const key = req.query.key;
+    if (!key) {
+      return res.status(400).send('Parameter key wajib disertakan.');
+    }
+    try {
+      const command = new GetObjectCommand({
+        Bucket: bucket,
+        Key: key,
+      });
+      const data = await s3.send(command);
+      res.setHeader('Content-Type', data.ContentType || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      const byteArray = await data.Body.transformToByteArray();
+      return res.send(Buffer.from(byteArray));
+    } catch (err) {
+      console.error('Storage Proxy View Error:', err);
+      return res.status(404).send('Gambar tidak ditemukan di storage.');
+    }
   }
 
-  const { action, fileName, folder = 'FOTO ASET', fileKey, contentType, fileBase64 } = req.body || {};
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed. Use POST or GET.' });
+  }
+
+  const { action, fileName, folder = 'FOTO ASET', fileKey, contentType, fileBase64, keys } = req.body || {};
 
   try {
     // ------------------------------------------------------------
@@ -74,22 +98,49 @@ export default async function handler(req, res) {
 
       const encodedKey = key.split('/').map(encodeURIComponent).join('/');
       const publicUrl = `${endpoint}/${bucket}/${encodedKey}`;
+      const proxyUrl = `/api/storage?key=${encodeURIComponent(key)}`;
 
-      // Buat presigned GET URL (berlaku 7 hari) sebagai opsi jika bucket private
-      let downloadUrl = publicUrl;
+      // Buat presigned GET URL (berlaku 7 hari)
+      let downloadUrl = proxyUrl;
       try {
         const getCmd = new GetObjectCommand({ Bucket: bucket, Key: key });
         downloadUrl = await getSignedUrl(s3, getCmd, { expiresIn: 604800 });
       } catch (e) {
-        // fallback to publicUrl
+        // fallback to proxyUrl
       }
 
       return res.status(200).json({
         success: true,
         fileKey: key,
         publicUrl,
+        proxyUrl,
         downloadUrl,
       });
+    }
+
+    // ------------------------------------------------------------
+    // 2. ACTION: CHECK & REFRESH MULTIPLE KEYS (Memastikan Foto Muncul Dari RustFS)
+    // ------------------------------------------------------------
+    if (action === 'refresh_photo_urls') {
+      const result = {};
+      const keyList = Array.isArray(keys) ? keys : [];
+
+      for (const itemKey of keyList) {
+        if (!itemKey) continue;
+        try {
+          const getCmd = new GetObjectCommand({ Bucket: bucket, Key: itemKey });
+          const signed = await getSignedUrl(s3, getCmd, { expiresIn: 604800 });
+          result[itemKey] = {
+            exists: true,
+            downloadUrl: signed,
+            proxyUrl: `/api/storage?key=${encodeURIComponent(itemKey)}`,
+          };
+        } catch (e) {
+          result[itemKey] = { exists: false };
+        }
+      }
+
+      return res.status(200).json({ success: true, urls: result });
     }
 
     // ------------------------------------------------------------
